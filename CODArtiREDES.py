@@ -57,7 +57,7 @@ def detrend(datos,window=800):#arreglo indicado para las 300 imágenes,con regre
 b,a = signal.bessel(3,0.1,btype='lowpass') #grado del filtrado 0.1
 datosfilt=signal.filtfilt(b,a,datos,axis=-1)
 datosNorm=detrend(NormF(datos))
-datosNormFilt=detrend(NormF(datosfilt))
+datosNormFilt=(NormF(datosfilt))
 dt=0.2 # Depede del tiempo de adquisión eb segundos 
 time=np.arange(0,dt*datosNorm.shape[-1],dt) 
 
