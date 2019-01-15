@@ -20,16 +20,10 @@ import pandas as pd
 import seaborn as sns 
 
 
-filename="Tx14 4 "
+filename="Tx14 4 " #nombre de tu archivo en formato csv
 data=np.loadtxt(filename + ".csv",delimiter=',')
 
-#bins = np.loadtxt('P190617bins0.csv', delimiter= ',') 
 
-#coors = np.loadtxt('coordenadasD190617.csv', delimiter= ',') 
-#zz = np.loadtxt('BaseDeDatosP190617corrDA.csv', delimiter= ',')
-
-datos=np.array([data[i:i+800] for i in range(0,4000,800)])
-datos=np.swapaxes(datos,1,2)  
 
 #Normalization respect the baseline: total of datos - min baseline / min baseline. We considere only the first 50 images of basal activity
 def NormF(datos):
