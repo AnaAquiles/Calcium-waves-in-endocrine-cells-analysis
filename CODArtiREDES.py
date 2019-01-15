@@ -1009,4 +1009,25 @@ def dendrogram(df, number_of_clusters=int(df.shape[1] / 1.2)):
         plt.setp(cg.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
         plt.show() 
 
-dendrogram(df)
+dendrogram(df) 
+
+
+
+#%% 
+
+# Exponential decay, ABC, FREQUENCY and Ampitude values, for one cell 
+
+Cell1 = datosNormFilt[0,52,440:540]
+
+time = time[440:540]
+
+Tau = np.polyfit(time, np.log(Cell1),1) 
+
+Abc = simps(Cell1) 
+
+Max = np.max(Cell1) 
+Min = np.min(Cell1) 
+
+plt.plot(Cell1, label='Tau = 0.22')
+
+ 
