@@ -107,7 +107,14 @@ class FirtsDialogWinClass(QtGui.QMainWindow, FirstDialogWin):
     def __init__(self, parent = MainWinClass):
         super(FirtsDialogWinClass, self).__init__()
         self.setupUi(self)
-#        form_class_1.show()
+        self.setWindowFlags(  
+        QtCore.Qt.FramelessWindowHint |
+        QtCore.Qt.WindowStaysOnTopHint |
+        QtCore.Qt.X11BypassWindowManagerHint)                                       #https://stackoverflow.com/questions/40866883/pyqt5-change-mainwindow-flags
+                                                                               #https://stackoverflow.com/questions/34160160/creating-window-that-has-no-close-button-in-qt
+        self.setWindowModality(Qt.ApplicationModal)                                                                      
+
+        #        form_class_1.show()
 #        uic.loadUi("GUI4_PlotTableWin.ui", self).show()
 
 
