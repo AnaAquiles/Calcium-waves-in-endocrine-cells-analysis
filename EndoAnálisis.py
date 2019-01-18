@@ -18,7 +18,7 @@ import pandas as pd
 import seaborn as sns 
 
 
-filename="Nif-GnRH"
+filename="Nif-GnRH"                                                            ##280:420, GnRh 440:540, Rest 541:1800
 data=np.loadtxt(filename + ".csv",delimiter=',')
 
 # Cuando se tengan tratamientos del mismo tamaño de imagen,descomentar con
@@ -28,7 +28,7 @@ data=np.loadtxt(filename + ".csv",delimiter=',')
 #datos=np.swapaxes(data,0,1)  
 
 # Cuando NO se tenga el mismo número de imágenes por estímulo, correr: 
-datos = np.array([data[300:600]]) #en data:, colocar el número correspondiente al límite de la primera adquisición, seguido de :
+datos = np.array([data[280:420]]) #en data:, colocar el número correspondiente al límite de la primera adquisición, seguido de :
 #                             si tu estímulo está entre un valor y otro, colocar #inicio:#final
 datos = np.swapaxes(datos,1,2)
     
@@ -37,11 +37,11 @@ datos = np.swapaxes(datos,1,2)
     #total of datos - min baseline / min baseline
 
 def NormF(datos):
-    baseline=np.amin(datos[:,:,:300],-1)[:,:,None] # este valor tiene que ser igual al númerototal de imágenes a analizar por tratamiento 
+    baseline=np.amin(datos[:,:,:140],-1)[:,:,None] # este valor tiene que ser igual al númerototal de imágenes a analizar por tratamiento 
     return datos/baseline
     
 #Correction of activity cells debleach with linear regress of the first 50 values for each condition
-def detrend(datos,window=300):#mismo valor que en baseline
+def detrend(datos,window=140):#mismo valor que en baseline
     x=np.arange(0,window)
     x = x[None,:]*np.ones((datos.shape[-2],1))
     x=np.ravel(x)
@@ -127,11 +127,11 @@ plt.plot(detrend(NormF(datosfilt))[i,:,:].T)
 
 #     Calculo de los valores de ABC, Max/Min y Tasa de decaimiento
 
-signals = (datosNormFilt[0,:,150:300]) #coloca de donde a donde quieres calcular estos valores
+signals = (datos[0,:,:])
+cells = np.arange(0,894,1)
 #                                       si lo quieres calcular de todas tus imágenes, dejar :#total
 #                                       si lo quieres hacer en un rango referente, colocar #inicio:#final
 
-time2 = time[150:300] # se requiere una partición del tiempo igual a la que se hizo en signals
 
 # Valores de abc POR simpson para cada célula 
 
@@ -140,7 +140,7 @@ Abc = simps(signals,axis=-1)
 # valores de la tasa de decaimiento para cada célula 
 
 for i in range(len(signals)):
-    tau = np.polyfit(time2,np.log(signals[i]),1)   
+    tau = np.polyfit(time,np.log(signals[i]),1)   
 
 Max = np.max(signals,axis=-1) 
 Min = np.min(signals, axis=-1) 
@@ -162,9 +162,9 @@ for n in range(0,len(fftabsdata)):
 
 Amplitude = np.array(pspec)
 
-meanFreq_part = np.mean(Amplitude)
-sdFreq_part = np.std(Amplitude) 
-varFreq_part = np.var(Amplitude,axis = 1)
+meanFreq_part = np.mean(Amplitude, axis=0)
+sdFreq_part = np.std(Amplitude, axis=0) 
+varFreq_part = np.var(Amplitude,axis = 0)
 
 
 #Amplitude = np.array(pspec)
@@ -179,9 +179,10 @@ plt.figure(3)
 plt.clf()
 
 plt.subplot(121)
-plt.plot(f,Amplitude, c='b')
+plt.plot(f,Amplitude.T, c='b')
 plt.plot(f,meanFreq_part, c='r')
-plt.plot(f,varFreq_part, c='k')
+plt.plot(f,varFreq_part
+         , c='k')
 #plt.xlim(0,0.05)
 #plt.legend('Global PSD','mean Global PSD', 'SD Global PSD')
 plt.ylabel('Power (w/Smooth)')
@@ -214,8 +215,8 @@ def SurrogateCorrData(datos,N=1000): #Número de veces en las que se generará l
     CorrMat=[]
     for i in range(N):
         angSurr=np.random.uniform(-np.pi,np.pi,size=ang.shape)
-        angSurr[:,150:]= - angSurr[:,150:0:-1] 
-        angSurr[:,150]=0       #tenemos que colocar únicamente el valor correspondiente a la mitad de las imágenes de nuestro estudio
+        angSurr[:,70:]= - angSurr[:,70:0:-1] 
+        angSurr[:,70]=0       #tenemos que colocar únicamente el valor correspondiente a la mitad de las imágenes de nuestro estudio
         
         fftdatosSurr=np.cos(angSurr)*amp + 1j*np.sin(angSurr)*amp
     
@@ -249,7 +250,7 @@ spcorr,pval=stats.spearmanr(datosNorm[i],axis=1)
  #          Cambiamos a tres derviaciones estándar
 spcorr[np.abs(spcorr)<(meanSCM + 2*sdSCM)]=0
 
-np.savetxt(filename +"01spcorr.csv", spcorr, delimiter=',')
+#np.savetxt(filename +"01spcorr.csv", spcorr, delimiter=',')
 
 #      Gráficas de correlación 
 
@@ -290,7 +291,7 @@ plt.hist(SCM[:,5,8],bins=50)
 # Seleccionamos valores significativos de correlación 
 
 spcorr2=np.tril(spcorr)
-z = np.where((spcorr2>0.3) & (spcorr2<0.9)) 
+z = np.where((spcorr2>0.35) & (spcorr2<0.9)) 
 zz=[]
 
 #usando zip para iterar las parejas 
@@ -303,12 +304,12 @@ zz=np.array(zz)
 # Cargar los valores de las coordenadas
 
 #%%
-coors= np.loadtxt('L290617C.csv', delimiter= ',') # colocar el nombre del archivo con la extensión.csv
+coors= np.loadtxt('Coord.csv', delimiter= ',') # colocar el nombre del archivo con la extensión.csv
 
 #     SACAMOS LA CANTIDAD DE CONEXIONES QUE TIENE CADA CÉLULA 
 
 
-binsp = 1*(np.abs(spcorr2>0.3) & (spcorr2<0.9)).astype(float)
+binsp = 1*(np.abs(spcorr2>0.45) & (spcorr2<0.9)).astype(float)
 
 conex = (sum(binsp).astype(float)) 
 
@@ -321,27 +322,32 @@ Conex = (conex[conex!=0])
 Nodes = np.array(Nodes).T.astype(float) 
 Nodos= np.vstack((Nodes.T[0],Conex)).T  ####Número de nodo más el número de conexiones que tiene
 Nod = Nodos[:,0] 
-NodosCells = np.intersect1d(Nod, len(signals)).astype(float)
-
-Resp = []
-for i in range(0, len(NodosCells)):
-    Resp.append(Nodos[int(NodosCells[i])])
-
-Resp = np.array(Resp)
-
-zzResp = []
-for i in range(0, len(NodosCells)):
-    zzResp.append(zz[int(NodosCells[i]),:])
-
-zzResp = np.array(zzResp)
-#
 
 Total=[]      
      
-for i in range(0,len(signals)):
-    Total.append(coors[int(signals[i]),:])
+for i in range(0,len(Nod)):
+    Total.append(coors[int(Nod[i]),:])
 
 Total = np.array(Total) #Coordenadas del número total de células
+
+
+np.savetxt(filename +"zz.csv", zz, delimiter=',')
+np.savetxt(filename +"Total.csv", Total, delimiter=',')
+
+#%%
+
+# Scatter map de los nodos con p < 0.45 # de conexiones por nodo
+
+plt.style.use('seaborn-whitegrid')
+
+
+x = Total[:,0]
+y = Total[:,1]
+
+plt.figure(6)
+plt.scatter(x,y, s = Conex, c= Conex, cmap = "seismic",alpha =0.5) 
+plt.show()
+
 
 #%%
 
@@ -349,7 +355,6 @@ Total = np.array(Total) #Coordenadas del número total de células
 
 plt.style.use('seaborn-whitegrid')
 
-#plt.clf()
 
 x = Total[:,0]
 y = Total[:,1]
@@ -372,7 +377,7 @@ plt.style.use('seaborn-whitegrid')
 fig, axes = plt.subplots(
                          )
 
-plt.hist(Resp,bins=50, facecolor='k', normed= True) 
+plt.hist(Nod,bins=50, facecolor='k', normed= True) 
 xt = plt.xticks()[0]  
 xmin, xmax = min(xt), max(xt)  
 lnspc = np.linspace(xmin, xmax, len(Conex))
@@ -398,7 +403,7 @@ plt.plot(lnspc, pdf_beta, label="Beta")
 #axes.set_xlabels('Degree')
 
 
-axes.axis([0,150,0,0.1])
+axes.axis([0,150,0,0.01])
 
 
 plt.show() 
@@ -424,4 +429,6 @@ Cluster = nx.average_clustering(G)
 Assortativity = nx.degree_assortativity_coefficient(G)
 ShortPath = nx.average_shortest_path_length(G)   
 Connected = np.array(nx.connected_component_subgraphs(G))
+
 plt.style.use('seaborn-whitegrid')
+nx.draw(G,node_size=100,node_color='tomato',edge_color='gray')
