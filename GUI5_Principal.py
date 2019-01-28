@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 from PyQt5 import uic
+from GUI5_Pituitary import PituitarySegm
 
 
 
@@ -66,10 +67,22 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
 
         #Para obtener la información que introdujo el usuario en la ventana de diálogo: https://stackoverflow.com/questions/52560496/getting-a-second-window-pass-a-variable-to-the-main-ui-and-close
         if PlotDialogWin.exec_() == QtWidgets.QDialog.Accepted:
-            print(PlotDialogWin.indexOfChecked)
-            print(PlotDialogWin.frame1)
-            print(PlotDialogWin.frame2)
+            inFrame = PlotDialogWin.frame1
+            finFrame = PlotDialogWin.frame2
+            cellType = PlotDialogWin.indexOfChecked
 
+            
+        #Analisis por tipo celular
+        if cellType == 0:
+            PituitarySegm(inFrame, finFrame)
+            
+        elif cellType == 1:
+            self.segmNeuron(inFrame, finFrame)
+            
+
+            
+    def segmNeuron(self, a, b):
+        print('Aquí va el análisis de neuronas')
         
             
 class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
