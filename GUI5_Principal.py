@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#-*- coding: utf-8 -*-
 """
 Created on Mon Jan 14 13:49:57 2019
 
@@ -10,27 +10,27 @@ import os
 import tifffile 
 import numpy as np
 import matplotlib.pyplot as plt
-
-from pyqtgraph.Qt import QtCore, QtGui
+from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 from PyQt5 import uic
 
-MainWin= uic.loadUiType("GUI5_MainWin.ui")[0]
-FirstDialogWin = uic.loadUiType("GUI5_FirstDialog.ui")[0]
-SeconDialogWin = uic.loadUiType("GUI5_SecondDialog.ui")[0]
 
 
-class MainWinClass(QtGui.QMainWindow, MainWin):
-    
+MainWin= uic.loadUiType("GUI5_MainWin.ui")[0]                                  #Ventana que tendrá el stack y el menú
+PlotDialogWin = uic.loadUiType("GUI5_FirstDialog.ui")[0]                       #Ventana de serie tiempo completa
+AdviseDialogWin1 = uic.loadUiType("GUI5_SecondDialog.ui")[0]                   #Ventana de error, advertencia
+
+
+
+class MainWinClass(QtGui.QMainWindow, MainWin):    
     def __init__(self, parent=None):
-        QtGui.QMainWindow.__init__(self, parent)
-        
+        super().__init__(parent)        
         self.setupUi(self)
         self.openAction.triggered.connect(self.openFile)
         
         
-    def openFile(self):                                                        #                                         <------Abre un archivo
-#        self.imv1.clear()                                                      # Si se abre otro archivo se limpia la gráfica
+    def openFile(self):                                                        #Abre un archivo
+#        self.imv1.clear()                                                     # Si se abre otro archivo se limpia la gráfica
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File',\
                                                      os.getenv('HOME'))        #Obtiene la ruta del SO
         lista0 = str(filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
@@ -54,72 +54,75 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         for frame in range(self.NoFrames):  
             imagen_i = self.data[frame,:,:] 
             self.SerieTiempo[frame] = np.mean(imagen_i) 
-
+        
+                    
         #Para poner la gráfica en la ventana de diálogo
-        self.FirstDialogWin = FirstDialogWinClass(self.NoFrames)               #"Llamamos" a la clase de la primera ventana
+        PlotDialogWin = PlotDialogWinClass(self.NoFrames)                      #"Llamamos" a la clase de la primera ventana
         ItemGrafica = pg.PlotCurveItem(pen=(0,255,0))                          #Se hace un ítem de una gráfica  
         ItemGrafica.setData(self.SerieTiempo)                                  #Se agregan los datos de la serie de tiempo al ítem} 
-        self.FirstDialogWin.TimeSeriesPlot.addItem(ItemGrafica)                #Se agrega el ítem a la primera ventana        
-        self.FirstDialogWin.show()                                             #Se muestra la primer ventana
+        PlotDialogWin.TimeSeriesPlot.addItem(ItemGrafica)                      #Se agrega el ítem a la primera ventana        
+        PlotDialogWin.show()                                                   #Se muestra la primer ventana
+        
 
-
-"""qt designer modal dialog python
-https://forum.qt.io/topic/24027/qtdesigner-how-radio-button-group-together
-https://www.youtube.com/watch?v=fSnTjrtkV9A   PARA CERRAR CON UN BOTÓN
-https://stackoverflow.com/questions/41150669/open-second-window-from-main-with-pyqt5-and-qt-designer
-
-"""
+        #Para obtener la información que introdujo el usuario en la ventana de diálogo: https://stackoverflow.com/questions/52560496/getting-a-second-window-pass-a-variable-to-the-main-ui-and-close
+        if PlotDialogWin.exec_() == QtWidgets.QDialog.Accepted:
+            print(PlotDialogWin.indexOfChecked)
+            print(PlotDialogWin.frame1)
+            print(PlotDialogWin.frame2)
 
         
-class FirstDialogWinClass(QtGui.QMainWindow, FirstDialogWin):
-    def __init__(self, NoFrames):
-        super(FirstDialogWinClass, self).__init__()
+            
+class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
+    def __init__(self, NoFrames, parent=None):
+        super().__init__(parent)
         self.setupUi(self)
         
-#        #Para que la nueva ventana no se pueda cerrar y esté siempre encima de la ventana principal:
-#        self.setWindowFlags(  
-#        QtCore.Qt.FramelessWindowHint |
-#        QtCore.Qt.WindowStaysOnTopHint )                                       #https://stackoverflow.com/questions/40866883/pyqt5-change-mainwindow-flags
-#                                                                               #https://stackoverflow.com/questions/34160160/creating-window-that-has-no-close-button-in-qt
-#        #Para que la ventana de dialogo no deje que se pueda modificar la ventana principal:                                                                      
-#        self.setWindowModality(QtCore.Qt.ApplicationModal)                     #https://stackoverflow.com/questions/22410663/block-qmainwindow-while-child-widget-is-alive-pyqt                                                 
-
+        #Para que la nueva ventana no se pueda cerrar y esté siempre encima de la ventana principal:
+        self.setWindowFlags(  
+        QtCore.Qt.FramelessWindowHint |
+        QtCore.Qt.WindowStaysOnTopHint )                                       #https://stackoverflow.com/questions/40866883/pyqt5-change-mainwindow-flags
+                                                                               #https://stackoverflow.com/questions/34160160/creating-window-that-has-no-close-button-in-qt
+        #Para que la ventana de dialogo no deje que se pueda modificar la ventana principal:                                                                      
+        self.setWindowModality(QtCore.Qt.ApplicationModal)                     #https://stackoverflow.com/questions/22410663/block-qmainwindow-while-child-widget-is-alive-pyqt                                                 
 
         #Para obtener el número de frames que tiene el stack completo (que ya se había calculado en la ventana principal)
-        self.NoFrames = NoFrames
-        print(NoFrames)               
-        self.FirstDialogButton.clicked.connect(self.FirstDialog)               #Cuando se presiona el botón de la primer ventana
+        self.NoFrames = NoFrames            
+        self.FirstDialogButton.clicked.connect(self.CheckFramesInfo)           
 
-        
-    def FirstDialog(self):
-        frame1 = self.Fr1_spinBox.value();
-        frame2 = self.Fr2_spinBox.value();   
-        print(frame1)                                             
-        print(frame2)              
-#        print(len(self.partnerDialog.SerieTiempo))                       
-        if (frame2 <= frame1) or (frame2 - frame1 < 300) or (frame2 - frame1 > self.NoFrames) :
-            
-            self.SecondDialogWin = SecondDialogWinClass()
-            self.SecondDialogWin.show()                                    
-     #fALTA LEER LOS RADIO BUTTONS                          
-                               
-#        self.PituitaryButton.clicked.connect(self.radio_button_clicked) 
-#        self.NeuronButton.clicked.connect(self.radio_button_clicked) 
-#        
-#    def radio_button_clicked(self):
-#        print(self.CellTypeGroup.checkedId())
-#        print(self.CellTypeGroup.checkedButton().text())        
+    #Se verifica primero que los datos dados por el usuario "tienen sentido" :
+    #1.- Que el frame inicial sea menor al frame final
+    #2.- Que al menos la porción de video contenga 300 frames
+    #3.- Que no se rebase el número total de frames del stack cargado
+    def CheckFramesInfo(self):
+        self.frame1 = self.Fr1_spinBox.value();
+        self.frame2 = self.Fr2_spinBox.value();   
+      
+        if (self.frame2 <= self.frame1) or (self.frame2 - self.frame1 < 300) \
+            or (self.frame2 - self.frame1 > self.NoFrames) :            
+            #Ventana que avisa al usuario que eligió mal los frames inicial y final
+            self.SecondDialogWin = FramesAdviceWinClass()
+            self.SecondDialogWin.show()           
 
-        
-class SecondDialogWinClass(QtGui.QMainWindow, SeconDialogWin):
-    def __init__(self, parent = FirstDialogWinClass):
-        super(SecondDialogWinClass, self).__init__()
+        else:
+            #Iterar sobre los radio buttons para saber cúal se eligió:
+            self.indexOfChecked = [self.CellTypeGroup.buttons()[x].isChecked() \
+                for x in range(len(self.CellTypeGroup.buttons()))].index(True)  
+            super().accept()                                                   #Call parent method
+
+
+
+class FramesAdviceWinClass(QtGui.QMainWindow, AdviseDialogWin1):               #Esta ventana solo es de advertencia de un error
+    def __init__(self, parent = PlotDialogWinClass):
+        super(FramesAdviceWinClass, self).__init__()
         self.setupUi(self)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
-        
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
         
         
 app = QtGui.QApplication(sys.argv)
 MyWindow = MainWinClass(None)
 MyWindow.show()
 app.exec_()
+
+
+
