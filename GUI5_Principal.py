@@ -20,25 +20,36 @@ from GUI5_Pituitary import PituitarySegm
 MainWin= uic.loadUiType("GUI5_MainWin.ui")[0]                                  #Ventana que tendrá el stack y el menú
 PlotDialogWin = uic.loadUiType("GUI5_FirstDialog.ui")[0]                       #Ventana de serie tiempo completa
 AdviseDialogWin1 = uic.loadUiType("GUI5_SecondDialog.ui")[0]                   #Ventana de error, advertencia
-
+ErrorDialogWin1 = uic.loadUiType("GUI5_ErrorWin1.ui")[0] 
 
 
 class MainWinClass(QtGui.QMainWindow, MainWin):    
     def __init__(self, parent=None):
         super().__init__(parent)        
         self.setupUi(self)
-        self.openAction.triggered.connect(self.openFile)
+        self.findRoiAction.triggered.connect(self.openFile)                    #El botón se conecta primero a la función que permite abrir un stack
         
         
     def openFile(self):                                                        #Abre un archivo
-#        self.imv1.clear()                                                     # Si se abre otro archivo se limpia la gráfica
+        self.imv1.clear()                                                     # Si se abre otro archivo se limpia la gráfica
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File',\
                                                      os.getenv('HOME'))        #Obtiene la ruta del SO
         lista0 = str(filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
-        lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)
+        file_extention = lista0[-3:]
+
+        #Hay que verificar que el archivo a cargar sea uno tipo tiff
+        if file_extention != str('tif'):
+            self.FileTypeErrorAdviceWin = FileTypeAdviceWinClass()
+            self.FileTypeErrorAdviceWin.show()  
+
+        lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)  
         tif = tifffile.TiffFile(str(lista1))                                   #El stack se guarda en tif
         self.data = tif.asarray()                                              #El stack de imágenes se pasa a un arreglo
         forma = self.data.shape
+        
+        #Hay que verificar que el archivo tenga más de 300 frames, si no ocurre esto hay que salir de la función y sacar un mensaje de error        
+
+
         self.NoFrames = forma[0]
         self.alto = forma[1]
         self.ancho = forma[2]
@@ -130,6 +141,15 @@ class FramesAdviceWinClass(QtGui.QMainWindow, AdviseDialogWin1):               #
         self.setupUi(self)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
         self.setWindowModality(QtCore.Qt.ApplicationModal)
+        
+        
+class FileTypeAdviceWinClass(QtGui.QMainWindow, ErrorDialogWin1):               #Esta ventana solo es de advertencia de un error
+    def __init__(self, parent = MainWinClass):
+        super(FileTypeAdviceWinClass, self).__init__()
+        self.setupUi(self)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+
         
         
 app = QtGui.QApplication(sys.argv)
