@@ -22,7 +22,7 @@ PlotDialogWin = uic.loadUiType("GUI5_FirstDialog.ui")[0]                       #
 AdviseDialogWin1 = uic.loadUiType("GUI5_SecondDialog.ui")[0]                   #Ventana de error, advertencia
 ErrorDialogWin1 = uic.loadUiType("GUI5_ErrorWin1.ui")[0] 
 ErrorDialogWin2 = uic.loadUiType("GUI5_ErrorWin2.ui")[0] 
-ContourTableWin = uic.loadUiType("GUI5_ContoursTable.ui")[0]
+ContourTableWin = uic.loadUiType("GUI5_ContoursTable2.ui")[0]
 
 
 class MainWinClass(QtGui.QMainWindow, MainWin):    
