@@ -14,6 +14,8 @@ from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 from PyQt5 import uic
 from GUI5_Pituitary import PituitarySegm
+from GUI5_CellTimeSeries import ContourTimeSeries
+
 
 
 
@@ -91,12 +93,16 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             
         #Analisis por tipo celular
         if cellType == 0:                                                      #Si el botón que eligió es 0 (hipófisis)
-            self.mascara, self.ROI_dict = PituitarySegm(inFrame, finFrame)     #También hay que pasarle la imagen original!!!
-            encima = pg.ImageItem(self.mascara)
-            self.imv1.addItem(encima)     
-            print("Paso 0")
+            #Se encuentran las células, se obtiene un diccionario con los contornos y una imagen binaria, los superponemos al video
+            self.mascara, self.ROI_dict = PituitarySegm(inFrame, finFrame)     #Llama a la func que hace la segmentación [Falta pasarle la imagen original!!!]
+            encima = pg.ImageItem(self.mascara)                                #Hacemos el ítem para mostrar la imagen de contornos
+            self.imv1.addItem(encima)                                          #Ponemos la imagen de contornos encima del video
+            
+            #Crear el diccionario de series de tiempo 
+            self.TimeSer_dict = ContourTimeSeries(self.data, self.ROI_dict, self.NoFrames, self.alto, self.ancho)
+            print(self.TimeSer_dict)
+            
             self.TableWin = ContourTableWinClass(self.ROI_dict)
-            print("Paso n")
             self.TableWin.show()
             
         elif cellType == 1:                                                    #Si el botón que eligió es 1 (neuronas)
@@ -176,15 +182,12 @@ class ContourTableWinClass(QtGui.QMainWindow, ContourTableWin):                #
         super(ContourTableWinClass, self).__init__()
         self.setupUi(self)
         
-        print("Paso 1")
         self.ContoursTable.setRowCount(len(ContoursDict))                             #Número de renglones que tendrá la tabla dependiendo del número de ROIs
         self.ContoursTable.setColumnCount(3)                                           #Número de columnas que tendrá la tabla    
-        print("Paso 2")
         renglon=0     
         self.botones_series = QtGui.QButtonGroup()                          #Grupo de radio buttons
         self.botones_remove = QtGui.QButtonGroup()
         
-        print("Paso 3")
         for key in ContoursDict.keys():                                       #Para saber las posiciones de cada ROI encontrada   
             contorno = ContoursDict[key];
             pos = contorno[0,0]
@@ -207,8 +210,7 @@ class ContourTableWinClass(QtGui.QMainWindow, ContourTableWin):                #
             renglon = renglon + 1                                              #Para pasar al siguiente renglón
                            
         self.ContoursTable.setHorizontalHeaderLabels(str("Número;Posición;Quitar ROI").split(";"))      #Etiqueta de la columna 
-        self.ContoursTable.verticalHeader().hide()                                     #Quitar letrero vertical   https://stackoverflow.com/questions/14910136/how-can-i-enable-disable-qtablewidgets-horizontal-vertical-header        
-        print("Paso 4")                                         
+        self.ContoursTable.verticalHeader().hide()                                     #Quitar letrero vertical   https://stackoverflow.com/questions/14910136/how-can-i-enable-disable-qtablewidgets-horizontal-vertical-header                                             
 
 
 
