@@ -98,10 +98,9 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             encima = pg.ImageItem(self.mascara)                                #Hacemos el ítem para mostrar la imagen de contornos
             self.imv1.addItem(encima)                                          #Ponemos la imagen de contornos encima del video
             
-            #Crear el diccionario de series de tiempo 
+            #Crear el diccionario de series de tiempo (se va a usar para graficar en la ventana de tabla)
             self.TimeSer_dict = ContourTimeSeries(self.data, self.ROI_dict, self.NoFrames, self.alto, self.ancho)
-            print(self.TimeSer_dict)
-            
+                        
             self.TableWin = ContourTableWinClass(self.ROI_dict)
             self.TableWin.show()
             
@@ -213,8 +212,7 @@ class ContourTableWinClass(QtGui.QMainWindow, ContourTableWin):                #
         self.ContoursTable.verticalHeader().hide()                                     #Quitar letrero vertical   https://stackoverflow.com/questions/14910136/how-can-i-enable-disable-qtablewidgets-horizontal-vertical-header                                             
 
 
-
-        
+  
 app = QtGui.QApplication(sys.argv)
 MyWindow = MainWinClass(None)
 MyWindow.show()
