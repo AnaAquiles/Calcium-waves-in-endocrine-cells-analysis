@@ -27,6 +27,7 @@ ErrorDialogWin2 = uic.loadUiType("GUI5_ErrorWin2.ui")[0]
 ContourTableWin = uic.loadUiType("GUI5_ContoursTable2.ui")[0]
 
 
+
 class MainWinClass(QtGui.QMainWindow, MainWin):    
     def __init__(self, parent=None):
         super().__init__(parent)        
@@ -40,6 +41,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         #Se va a abrir el archivo que se desea analizar
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File',\
                                                      os.getenv('HOME'))        #Obtiene la ruta del SO
+
         lista0 = str(filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
         file_extention = lista0[-3:]                                           #últimos tres carcateres del string anterior
 
@@ -48,7 +50,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             self.FileTypeErrorAdviceWin = FileTypeAdviceWinClass()
             self.FileTypeErrorAdviceWin.show()  
             return                                                             #Salir de la función
-
+        
         #Buscar el alrchivo y guardarlo en una matriz
         lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)  
         tif = tifffile.TiffFile(str(lista1))                                   #El stack se guarda en tif
@@ -208,11 +210,17 @@ class ContourTableWinClass(QtGui.QMainWindow, ContourTableWin):                #
                          
             renglon = renglon + 1                                              #Para pasar al siguiente renglón
                            
-        self.ContoursTable.setHorizontalHeaderLabels(str("Número;Posición;Quitar ROI").split(";"))      #Etiqueta de la columna 
+        self.ContoursTable.setHorizontalHeaderLabels(str("N°;Pos;Remove").split(";"))      #Etiqueta de la columna 
         self.ContoursTable.verticalHeader().hide()                                     #Quitar letrero vertical   https://stackoverflow.com/questions/14910136/how-can-i-enable-disable-qtablewidgets-horizontal-vertical-header                                             
-
-
+        
+        self.ContoursTable.resizeColumnToContents(0)                           #https://stackoverflow.com/questions/40995778/resize-column-width-to-fit-into-the-qtablewidget-pyqt
+        self.ContoursTable.resizeColumnToContents(1)
+        self.ContoursTable.resizeColumnToContents(2)
+        self.ContoursTable.setFixedWidth(self.ContoursTable.columnWidth(0) + \
+        self.ContoursTable.columnWidth(1) + self.ContoursTable.columnWidth(2))
   
+    
+    
 app = QtGui.QApplication(sys.argv)
 MyWindow = MainWinClass(None)
 MyWindow.show()

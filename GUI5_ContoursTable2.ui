@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>275</width>
-    <height>503</height>
+    <width>356</width>
+    <height>587</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,8 +18,8 @@
     <rect>
      <x>10</x>
      <y>0</y>
-     <width>261</width>
-     <height>501</height>
+     <width>331</width>
+     <height>571</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
@@ -31,8 +31,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>261</width>
-          <height>211</height>
+          <width>321</width>
+          <height>231</height>
          </rect>
         </property>
        </widget>
@@ -42,15 +42,24 @@
     <item row="1" column="0">
      <widget class="QDockWidget" name="dockWidget">
       <widget class="QWidget" name="dockWidgetContents">
-       <widget class="QTableWidget" name="ContoursTable">
+       <widget class="QWidget" name="gridLayoutWidget_2">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>251</width>
-          <height>211</height>
+          <width>331</width>
+          <height>241</height>
          </rect>
         </property>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="0" column="0">
+          <widget class="QTableWidget" name="ContoursTable">
+           <property name="sizeAdjustPolicy">
+            <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
      </widget>
@@ -58,16 +67,16 @@
     <item row="2" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QCheckBox" name="checkBox_2">
+       <widget class="QCheckBox" name="ContoursCheckBox">
         <property name="text">
-         <string>CheckBox</string>
+         <string>Show All</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkBox">
+       <widget class="QCheckBox" name="LabelsCheckBox">
         <property name="text">
-         <string>CheckBox</string>
+         <string>Labels</string>
         </property>
        </widget>
       </item>
