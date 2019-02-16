@@ -14,8 +14,10 @@ se agregue al diccionario
 
 import numpy as np
 import cv2 
+import matplotlib.pyplot as plt
 
 
+# Genera el diccionario de series de tiempo
 def ContourTimeSeries(Stack, ROI_dict, NoFrames, alto, ancho):
     contours = list(ROI_dict.values())                                         #Los contornos se obtienen a partir del diccionario, pero deben pasarse a una lista, si no la variable es tipo "dict_values"
     NoContornos = len(contours)                     
@@ -41,5 +43,8 @@ def ContourTimeSeries(Stack, ROI_dict, NoFrames, alto, ancho):
 
         TimeSer_dict[j] = SerieTiempo                                          #Creación del diccionario de series de tiempo
 
-
+#    cv2.imshow('ImageWindow',binaria)
+#    plt.plot(SerieTiempo)
     return(TimeSer_dict)
+
+

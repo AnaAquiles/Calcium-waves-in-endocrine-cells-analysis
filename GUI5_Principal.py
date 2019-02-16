@@ -24,7 +24,7 @@ PlotDialogWin = uic.loadUiType("GUI5_FirstDialog.ui")[0]                       #
 AdviseDialogWin1 = uic.loadUiType("GUI5_SecondDialog.ui")[0]                   #Ventana de error, advertencia
 ErrorDialogWin1 = uic.loadUiType("GUI5_ErrorWin1.ui")[0] 
 ErrorDialogWin2 = uic.loadUiType("GUI5_ErrorWin2.ui")[0] 
-ContourTableWin = uic.loadUiType("GUI5_ContoursTable2.ui")[0]
+ContourTableWin = uic.loadUiType("GUI5_ContoursTable.ui")[0]
 
 
 
@@ -32,7 +32,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
     def __init__(self, parent=None):
         super().__init__(parent)        
         self.setupUi(self)
-        self.findRoiAction.triggered.connect(self.CellDetection)                    #El botón se conecta primero a la función que permite abrir un stack
+        self.findRoiAction.triggered.connect(self.CellDetection)               #El botón se conecta primero a la función que permite abrir un stack
         
         
     def CellDetection(self):                                                   #Función que realizará la segmentación de células
@@ -101,9 +101,9 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             self.imv1.addItem(encima)                                          #Ponemos la imagen de contornos encima del video
             
             #Crear el diccionario de series de tiempo (se va a usar para graficar en la ventana de tabla)
-            self.TimeSer_dict = ContourTimeSeries(self.data, self.ROI_dict, self.NoFrames, self.alto, self.ancho)
+            self.TimeSerDict = ContourTimeSeries(self.data, self.ROI_dict, self.NoFrames, self.alto, self.ancho)
                         
-            self.TableWin = ContourTableWinClass(self.ROI_dict)
+            self.TableWin = ContourTableWinClass(self.ROI_dict, self.TimeSerDict)
             self.TableWin.show()
             
         elif cellType == 1:                                                    #Si el botón que eligió es 1 (neuronas)
@@ -142,6 +142,7 @@ class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
       
         if (self.frame2 <= self.frame1) or (self.frame2 - self.frame1 < 300) \
             or (self.frame2 - self.frame1 > self.NoFrames) :            
+                
             #Ventana que avisa al usuario que eligió mal los frames inicial y final
             self.SecondDialogWin = FramesAdviceWinClass()
             self.SecondDialogWin.show()           
@@ -178,48 +179,68 @@ class FileTypeAdviceWinClass2(QtGui.QMainWindow, ErrorDialogWin2):             #
         self.setWindowModality(QtCore.Qt.ApplicationModal)
         
 
-class ContourTableWinClass(QtGui.QMainWindow, ContourTableWin):                #Ventana con la tabla de contornos
-    def __init__(self, ContoursDict, parent = MainWinClass):
+class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #Ventana con la tabla de contornos
+    def __init__(self, ContoursDict, TimeSerDict, parent = MainWinClass):
         super(ContourTableWinClass, self).__init__()
         self.setupUi(self)
         
-        self.ContoursTable.setRowCount(len(ContoursDict))                             #Número de renglones que tendrá la tabla dependiendo del número de ROIs
-        self.ContoursTable.setColumnCount(3)                                           #Número de columnas que tendrá la tabla    
+        self.ContoursTable.setRowCount(len(ContoursDict))                      #Número de renglones que tendrá la tabla dependiendo del número de ROIs
+        self.ContoursTable.setColumnCount(3)                                   #Número de columnas que tendrá la tabla    
         renglon=0     
-        self.botones_series = QtGui.QButtonGroup()                          #Grupo de radio buttons
+        self.botones_series = QtGui.QButtonGroup()                             #Grupo de radio buttons
         self.botones_remove = QtGui.QButtonGroup()
         
-        for key in ContoursDict.keys():                                       #Para saber las posiciones de cada ROI encontrada   
+#        self.TimeSerDict = TimeSerDict
+        
+        for key in ContoursDict.keys():                                        #Para saber las posiciones de cada ROI encontrada   
             contorno = ContoursDict[key];
             pos = contorno[0,0]
 
             item1 = QtGui.QRadioButton(str(pos))                               #Ponemos un radiobutton en cada renglón
             item1.setChecked(False)            
-#            item1.clicked.connect(self.CheckBox)                               #Si el radio button se presiona, mándalo a la función CheckBox
-            self.botones_series.addButton(item1)                                 #El radio button es parte del grupo radio buttons
-            self.ContoursTable.setCellWidget(renglon, 1, item1)                        #El string y la check Box se ponen en el i-ésimo renglón y columna 1 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
+#            item1.clicked.connect(PlotTimeSeries(self.botones_series, TimeSerDict, self.TimeSeriesGraph))                              #Si el radio button se presiona, mándalo a la función CheckBox
+            item1.clicked.connect(lambda: self.PlotTimeSeries(TimeSerDict))    #https://www.tutorialspoint.com/pyqt/pyqt_qradiobutton_widget.htm
+            self.botones_series.addButton(item1)                               #El radio button es parte del grupo radio buttons
+            self.ContoursTable.setCellWidget(renglon, 1, item1)                #El string y la check Box se ponen en el i-ésimo renglón y columna 1 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
                         
             item2 = QtGui.QTableWidgetItem(str(key))                           #El string de numeración de la tabla
-            self.ContoursTable.setItem(renglon, 0, item2)                              #El string se pone en el i-ésimo renglón y columna 0
+            self.ContoursTable.setItem(renglon, 0, item2)                      #El string se pone en el i-ésimo renglón y columna 0
            
-            item3 = QtGui.QRadioButton()                           #Ponemos un radiobutton en cada renglón
+            item3 = QtGui.QRadioButton()                                       #Ponemos un radiobutton en cada renglón
             item3.setChecked(False)            
-#            item3.clicked.connect(self.QuitarROI)                              #Si el radio button se presiona, mándalo a la función CheckBox
+#            item3.clicked.connect(self.QuitarROI)                             #Si el radio button se presiona, mándalo a la función CheckBox
             self.botones_remove.addButton(item3)                               #El radio button es parte del grupo radio buttons
-            self.ContoursTable.setCellWidget(renglon, 2, item3)                        #El string y la check Box se ponen en el i-ésimo renglón y columna 1 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
-                         
+            self.ContoursTable.setCellWidget(renglon, 2, item3)                #El string y la check Box se ponen en el i-ésimo renglón y columna 1 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
+                          
+                                            
             renglon = renglon + 1                                              #Para pasar al siguiente renglón
                            
-        self.ContoursTable.setHorizontalHeaderLabels(str("N°;Pos;Remove").split(";"))      #Etiqueta de la columna 
-        self.ContoursTable.verticalHeader().hide()                                     #Quitar letrero vertical   https://stackoverflow.com/questions/14910136/how-can-i-enable-disable-qtablewidgets-horizontal-vertical-header                                             
+        self.ContoursTable.setHorizontalHeaderLabels(str("No.;Plot [Pos]\
+        ;Remove").split(";"))                                                  #Etiqueta de la columna 
+        self.ContoursTable.verticalHeader().hide()                             #Quitar letrero vertical   https://stackoverflow.com/questions/14910136/how-can-i-enable-disable-qtablewidgets-horizontal-vertical-header                                             
         
-        self.ContoursTable.resizeColumnToContents(0)                           #https://stackoverflow.com/questions/40995778/resize-column-width-to-fit-into-the-qtablewidget-pyqt
-        self.ContoursTable.resizeColumnToContents(1)
-        self.ContoursTable.resizeColumnToContents(2)
-        self.ContoursTable.setFixedWidth(self.ContoursTable.columnWidth(0) + \
-        self.ContoursTable.columnWidth(1) + self.ContoursTable.columnWidth(2))
-  
-    
+#        self.ContoursTable.resizeColumnToContents(0)                           #https://stackoverflow.com/questions/40995778/resize-column-width-to-fit-into-the-qtablewidget-pyqt
+#        self.ContoursTable.resizeColumnToContents(1)
+#        self.ContoursTable.resizeColumnToContents(2)
+#        self.ContoursTable.setFixedWidth(self.ContoursTable.columnWidth(0) + \
+#        self.ContoursTable.columnWidth(1) + self.ContoursTable.columnWidth(2))
+         
+    def  PlotTimeSeries(self, TimeSerDict):            
+        self.TimeSeriesGraph.clear() 
+        boton = abs(self.botones_series.checkedId())                           #ID del botón seleccionado algo falla con esto            
+        print("Este es le valor original: " + str(boton))
+        ID = boton -2                                                          #Hay que corregir el ID, porque empieza en -2 por alguna razón
+        key = self.ContoursTable.item(ID,0).text()                             #Key del diccionario (texto que aparece en la primer columna de la tabla)        
+        print("Este es el valor que sale a la izquierda: " + str(key))
+        key = int(key)
+        plot1 = TimeSerDict[key]
+        
+        ItemGrafica = pg.PlotCurveItem(pen=(0,255,255))                        #Se hace un ítem de una gráfica  
+        ItemGrafica.setData(plot1)                                             #Se agregan los datos al ítem
+        self.TimeSeriesGraph.addItem(ItemGrafica)                              #Se agrega el ítem a la GUI  
+        
+
+        
     
 app = QtGui.QApplication(sys.argv)
 MyWindow = MainWinClass(None)
