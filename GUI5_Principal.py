@@ -101,10 +101,15 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             self.imv1.addItem(encima)                                          #Ponemos la imagen de contornos encima del video
             
             #Crear el diccionario de series de tiempo (se va a usar para graficar en la ventana de tabla)
-            self.TimeSerDict = ContourTimeSeries(self.data, self.ROI_dict, self.NoFrames, self.alto, self.ancho)
+            self.TimeSerDict = ContourTimeSeries(self.data, self.ROI_dict, \
+                                        self.NoFrames, self.alto, self.ancho)
                         
-            self.TableWin = ContourTableWinClass(self.ROI_dict, self.TimeSerDict)
+            self.TableWin = ContourTableWinClass(self.ROI_dict, \
+                                                 self.TimeSerDict, encima)
             self.TableWin.show()
+            self.TableWin.ContourCheckBox.setChecked(True)                     #Marcando la checkbox de los contornos
+
+
             
         elif cellType == 1:                                                    #Si el botón que eligió es 1 (neuronas)
             self.segmNeuron(inFrame, finFrame)
@@ -180,7 +185,7 @@ class FileTypeAdviceWinClass2(QtGui.QMainWindow, ErrorDialogWin2):             #
         
 
 class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #Ventana con la tabla de contornos
-    def __init__(self, ContoursDict, TimeSerDict, parent = MainWinClass):
+    def __init__(self, ContoursDict, TimeSerDict, Encima, parent = MainWinClass):
         super(ContourTableWinClass, self).__init__()
         self.setupUi(self)
         
@@ -189,6 +194,8 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         renglon=0     
         self.botones_series = QtGui.QButtonGroup()                             #Grupo de radio buttons
         self.botones_remove = QtGui.QButtonGroup()
+        
+        self.LabelCheckBox.clicked.connect(lambda: self.Labels(ContoursDict, Encima))
         
 #        self.TimeSerDict = TimeSerDict
         
@@ -228,17 +235,49 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
     def  PlotTimeSeries(self, TimeSerDict):            
         self.TimeSeriesGraph.clear() 
         boton = abs(self.botones_series.checkedId())                           #ID del botón seleccionado algo falla con esto            
-        print("Este es le valor original: " + str(boton))
-        ID = boton -2                                                          #Hay que corregir el ID, porque empieza en -2 por alguna razón
-        key = self.ContoursTable.item(ID,0).text()                             #Key del diccionario (texto que aparece en la primer columna de la tabla)        
-        print("Este es el valor que sale a la izquierda: " + str(key))
-        key = int(key)
+        ID = boton -2                                                          #Hay que corregir el ID, porque empieza con +2 por alguna razón
+        key = self.ContoursTable.item(ID,0).text()                             #Texto que aparece a la izquierda del botón seleccionado        
+        key = int(key)                                                         #Hay que cambiarlo a integer porque era string, este es el key del diccionario 
         plot1 = TimeSerDict[key]
         
         ItemGrafica = pg.PlotCurveItem(pen=(0,255,255))                        #Se hace un ítem de una gráfica  
         ItemGrafica.setData(plot1)                                             #Se agregan los datos al ítem
         self.TimeSeriesGraph.addItem(ItemGrafica)                              #Se agrega el ítem a la GUI  
         
+        
+    def Labels(self, ContoursDict, Encima):
+        print("Hola")
+        if self.ContourCheckBox.isChecked() == True:                                   #Si el botón 2 está marcado, hay que poner las etiquetas encima
+            for key in ContoursDict.keys():                                   #Agregamos las etiquetas
+                text = pg.TextItem(anchor=(0.3,0.3), fill=(0, 0, 0, 200)) 
+                text.setText(str(key), color=(255, 255, 255))                    #Texto que se desplegará al lado de la ROI
+                text.setParentItem(Encima) 
+                contorno = ContoursDict[key];
+                a,b = contorno[0,0];
+                text.setPos(a,b)                    
+
+
+
+#            if self.button1.isChecked() == True:                               #Si también el botón 1 está marcado, hay que poner las ROIs abajo también
+#                
+#                self.imv1.removeItem(self.encima)                              #Primero quitamos todo lo que está encima del video                
+#                self.Agregar_ROIs()                                            #Ponemos las ROIs abajo
+#                self.Agregar_Etiquetas()                                       #Encima ponemos las etiquetas
+#
+#            else:                                                              #Si el botón 1 no está marcado, hay que quitar las ROIs
+#                self.imv1.removeItem(self.encima)                              #Primero quitamos todo lo que está encima del video   
+#                self.Agregar_Solo_Etiquetas()                                  #Ponemos solo las etiquetas (sobre una imagen transparente)
+#
+#        
+#        elif self.ContourCheckBox.isChecked() == False:                                #Si el botón 2 no está marcado, hay que quitar las etiquetas 
+#            if self.button1.isChecked() == True:                               #Si el botón 1 está marcado, hay que poner solo las ROIs abajo
+#
+#                self.imv1.removeItem(self.encima)                              #Primero quitamos todo lo que está encima del video   
+#                self.Agregar_ROIs()                                            #Ponemos las ROIs
+#
+#            else:                                                              #Si el botón 1 tampoco está marcado, hay que quitar todo
+#                self.imv1.removeItem(self.encima)                              #Quitamos todo lo que está encima del video
+#                 
 
         
     

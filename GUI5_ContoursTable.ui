@@ -23,14 +23,14 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QCheckBox" name="checkBox_2">
+      <widget class="QCheckBox" name="ContourCheckBox">
        <property name="text">
         <string>Show All</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QCheckBox" name="checkBox">
+      <widget class="QCheckBox" name="LabelCheckBox">
        <property name="text">
         <string>Labels</string>
        </property>
