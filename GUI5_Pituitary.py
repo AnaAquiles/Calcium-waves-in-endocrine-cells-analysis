@@ -3,6 +3,7 @@
 Created on Mon Jan 28 16:04:15 2019
 
 @author: akire
+Aquí va la parte de clasificación (América)
 """
 import cv2
 import numpy as np

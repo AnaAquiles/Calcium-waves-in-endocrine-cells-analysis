@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 from PyQt5 import uic
+import cv2
 from GUI5_Pituitary import PituitarySegm
 from GUI5_CellTimeSeries import ContourTimeSeries
 
@@ -100,12 +101,28 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             encima = pg.ImageItem(self.mascara)                                #Hacemos el ítem para mostrar la imagen de contornos
             self.imv1.addItem(encima)                                          #Ponemos la imagen de contornos encima del video
             
+            """cómo listar los items que están encima del video???"""
+            ##################################################
+            bla = self.imv1.getImageItem()
+            print(bla)
+            self.imv1.removeItem(bla)
+            
+            bla = self.imv1.getImageItem()
+            print(bla)
+            self.imv1.removeItem(bla)            
+            
+#            for item in self.imv1.getImageItem():
+#                print("HOLA")
+            
+            ##################################################
+            
+            
             #Crear el diccionario de series de tiempo (se va a usar para graficar en la ventana de tabla)
             self.TimeSerDict = ContourTimeSeries(self.data, self.ROI_dict, \
                                         self.NoFrames, self.alto, self.ancho)
                         
             self.TableWin = ContourTableWinClass(self.ROI_dict, \
-                                                 self.TimeSerDict, encima)
+                                                 self.TimeSerDict, self.imv1, self.alto, self.ancho)
             self.TableWin.show()
             self.TableWin.ContourCheckBox.setChecked(True)                     #Marcando la checkbox de los contornos
 
@@ -185,7 +202,7 @@ class FileTypeAdviceWinClass2(QtGui.QMainWindow, ErrorDialogWin2):             #
         
 
 class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #Ventana con la tabla de contornos
-    def __init__(self, ContoursDict, TimeSerDict, Encima, parent = MainWinClass):
+    def __init__(self, ContoursDict, TimeSerDict, imv1, alto, ancho, parent = MainWinClass):
         super(ContourTableWinClass, self).__init__()
         self.setupUi(self)
         
@@ -195,7 +212,7 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         self.botones_series = QtGui.QButtonGroup()                             #Grupo de radio buttons
         self.botones_remove = QtGui.QButtonGroup()
         
-        self.LabelCheckBox.clicked.connect(lambda: self.Labels(ContoursDict, Encima))
+        self.LabelCheckBox.clicked.connect(lambda: self.Labels(ContoursDict, imv1, alto, ancho))
         
 #        self.TimeSerDict = TimeSerDict
         
@@ -245,16 +262,40 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         self.TimeSeriesGraph.addItem(ItemGrafica)                              #Se agrega el ítem a la GUI  
         
         
-    def Labels(self, ContoursDict, Encima):
-        print("Hola")
-        if self.ContourCheckBox.isChecked() == True:                                   #Si el botón 2 está marcado, hay que poner las etiquetas encima
+    def Labels(self, ContoursDict, imv1, alto, ancho):
+        if self.LabelCheckBox.isChecked() == True:                                   #Si el botón 2 está marcado, hay que poner las etiquetas encima
+            print("Hola 0")
+   
+            #Hay que generar una imagen de contornos (máscara) para ponerla sobre el video
+            contours = ContoursDict.values()
+            print("Tenemos los contornos")
+            mascara = np.zeros((alto, ancho, 4));
+            mascara1 = np.zeros((alto, ancho, 3));
+            cv2.drawContours(mascara1,contours,-1,(255,255,255),1);     #-1 en lugar del 0
+            mascara[:,:,0:3] = mascara1;
+            mascara[:,:,3][mascara1[:,:,0]>200]=255;                               #Solo se pondrá en no transparente la parte de las ROIs
+            
+            mascara2 = np.transpose(mascara,(1,0,2))                          #El (1,0,2) indica cómo se va a trasponer la matriz 3D (ejes)
+            
+
+            Encima = pg.ImageItem(mascara2)                                #Hacemos el ítem para mostrar la imagen de contornos
+            imv1.addItem(Encima)                                          #Ponemos la imagen de contornos encima del video
+
+
             for key in ContoursDict.keys():                                   #Agregamos las etiquetas
-                text = pg.TextItem(anchor=(0.3,0.3), fill=(0, 0, 0, 200)) 
+                text = pg.TextItem(anchor=(0.3,0.3), fill=(0, 0, 0, 50)) 
                 text.setText(str(key), color=(255, 255, 255))                    #Texto que se desplegará al lado de la ROI
                 text.setParentItem(Encima) 
                 contorno = ContoursDict[key];
                 a,b = contorno[0,0];
                 text.setPos(a,b)                    
+                
+        elif self.LabelCheckBox.isChecked() == False:
+            print("Hola 1")
+            for item in imv1.items():
+                print(item)
+#            imv1.removeItem(Encima)
+
 
 
 
