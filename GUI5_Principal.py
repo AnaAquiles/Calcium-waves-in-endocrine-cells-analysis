@@ -194,8 +194,8 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         super(ContourTableWinClass, self).__init__()
         self.setupUi(self)
         
-        self.TopContourItem = pg.ImageItem(mascara)                                    #Hacemos el ítem para mostrar la imagen de contornos
-        imv1.addItem(self.TopContourItem)                                              #Ponemos la imagen de contornos encima del video
+        self.TopContourItem = pg.ImageItem(mascara)                            #Hacemos el ítem para mostrar la imagen de contornos
+        imv1.addItem(self.TopContourItem)                                      #Ponemos la imagen de contornos encima del video
                 
         self.ContoursTable.setRowCount(len(ContoursDict))                      #Número de renglones que tendrá la tabla dependiendo del número de ROIs
         self.ContoursTable.setColumnCount(3)                                   #Número de columnas que tendrá la tabla    
@@ -203,9 +203,10 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         self.botones_series = QtGui.QButtonGroup()                             #Grupo de radio buttons
         self.botones_remove = QtGui.QButtonGroup()
         
-        self.LabelCheckBox.clicked.connect(lambda: self.Labels(ContoursDict, imv1, alto, ancho, mascara))
-        self.ContourCheckBox.clicked.connect(lambda: self.Contours(imv1, mascara))
-
+        self.LabelCheckBox.clicked.connect(lambda: self.LabelContour(imv1, mascara, ContoursDict, alto, ancho))
+        self.ContourCheckBox.clicked.connect(lambda: self.LabelContour(imv1, mascara, ContoursDict, alto, ancho))
+        
+        
         
 #        self.TimeSerDict = TimeSerDict
         
@@ -254,37 +255,37 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         ItemGrafica.setData(plot1)                                             #Se agregan los datos al ítem
         self.TimeSeriesGraph.addItem(ItemGrafica)                              #Se agrega el ítem a la GUI  
         
-        
-    def Contours(self, imv1, mascara):
+
+    def LabelContour(self, imv1, mascara, ContoursDict, alto, ancho):
         if self.ContourCheckBox.isChecked() == True:
-            self.TopContourItem = pg.ImageItem(mascara)                        #Hacemos el ítem para mostrar la imagen de contornos
-            imv1.addItem(self.TopContourItem)                                  #Ponemos la imagen de contornos encima del video
-                              
-        elif self.ContourCheckBox.isChecked() == False:   
-            imv1.removeItem(self.TopContourItem)     
-#            self.TopContourItem = pg.ImageItem(mascara)                
-                                    
-                        
-    def Labels(self, ContoursDict, imv1, alto, ancho, mascara):
-        if self.LabelCheckBox.isChecked() == True:                                   #Si el botón 2 está marcado, hay que poner las etiquetas encima
-            print("Hola 0")
+             if self.LabelCheckBox.isChecked() == True:                 
+                 imv1.removeItem(self.TopContourItem)
+                 self.TopContourItem = pg.ImageItem(mascara)                   #Hacemos el ítem para mostrar la imagen de contornos
+                 imv1.addItem(self.TopContourItem)                             #Ponemos la imagen de contornos encima del video
 
-            for key in ContoursDict.keys():                                   #Agregamos las etiquetas
-                text = pg.TextItem(anchor=(0.3,0.3), fill=(0, 0, 0, 50)) 
-                text.setText(str(key), color=(255, 255, 255))                    #Texto que se desplegará al lado de la ROI
-                text.setParentItem(self.TopContourItem) 
-                contorno = ContoursDict[key];
-                a,b = contorno[0,0];
-                text.setPos(a,b)                    
+                 for key in ContoursDict.keys():                                                        
+                     text = pg.TextItem(anchor=(0.3,0.3), fill=(0, 0, 0, 50)) 
+                     text.setText(str(key), color=(255, 255, 255))             #Texto que se desplegará al lado de la ROI
+                     text.setParentItem(self.TopContourItem) 
+                     contorno = ContoursDict[key];
+                     a,b = contorno[0,0];
+                     text.setPos(a,b)                       
+                 
+             else:
+                 imv1.removeItem(self.TopContourItem)          
+                 self.TopContourItem = pg.ImageItem(mascara)                   #Hacemos el ítem para mostrar la imagen de contornos
+                 imv1.addItem(self.TopContourItem)                             #Ponemos la imagen de contornos encima del video
+
+        if self.ContourCheckBox.isChecked() == False:            
+            if self.LabelCheckBox.isChecked() == True:
+               imv1.removeItem(self.TopContourItem)
+               self.TopContourItem = pg.ImageItem(mascara)                 
+               self.LabelCheckBox.setChecked(False) 
                 
-        elif self.LabelCheckBox.isChecked() == False:
-            print("Hola 1")
-#            for item in imv1.items():
-#                print(item)
-            imv1.removeItem(self.TopContourItem)
-            self.TopContourItem = pg.ImageItem(mascara) 
-            imv1.addItem(self.TopContourItem)
-
+            else:
+               imv1.removeItem(self.TopContourItem)
+               self.TopContourItem = pg.ImageItem(mascara) 
+ 
 
 
     
