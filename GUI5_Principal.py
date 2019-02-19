@@ -81,7 +81,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             imagen_i = self.data[frame,:,:] 
             self.SerieTiempo[frame] = np.mean(imagen_i) 
                             
-        #Se abre la ventana de diálogo con la gráfica anterior
+        #Se abre la ventana de diálogo con la gráfica anterior, pidiendo los parámetros de análisis
         PlotDialogWin = PlotDialogWinClass(self.NoFrames)                      #"Llamamos" a la clase de la primera ventana
         ItemGrafica = pg.PlotCurveItem(pen=(0,255,0))                          #Se hace un ítem de una gráfica  
         ItemGrafica.setData(self.SerieTiempo)                                  #Se agregan los datos de la serie de tiempo al ítem} 
@@ -98,22 +98,17 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         if cellType == 0:                                                      #Si el botón que eligió es 0 (hipófisis)
             #Se encuentran las células, se obtiene un diccionario con los contornos y una imagen binaria, los superponemos al video
             self.mascara, self.ROI_dict = PituitarySegm(inFrame, finFrame)     #Llama a la func que hace la segmentación [Falta pasarle la imagen original!!!]
-#            encima = pg.ImageItem(self.mascara)                                #Hacemos el ítem para mostrar la imagen de contornos
-#            self.imv1.addItem(encima)                                          #Ponemos la imagen de contornos encima del video
-#            
 
-            
-            
             #Crear el diccionario de series de tiempo (se va a usar para graficar en la ventana de tabla)
             self.TimeSerDict = ContourTimeSeries(self.data, self.ROI_dict, \
                                         self.NoFrames, self.alto, self.ancho)
-                        
+            
+            #Para crear la tabla (llamar a la clase que la crea)            
             self.TableWin = ContourTableWinClass(self.ROI_dict,self.TimeSerDict,\
                                 self.imv1, self.alto, self.ancho, self.mascara)
                                                 
             self.TableWin.show()
             self.TableWin.ContourCheckBox.setChecked(True)                     #Marcando la checkbox de los contornos
-
 
             
         elif cellType == 1:                                                    #Si el botón que eligió es 1 (neuronas)
@@ -165,7 +160,7 @@ class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
 
 
 
-class FramesAdviceWinClass(QtGui.QMainWindow, AdviseDialogWin1):               #Ventana de advertencia de error
+class FramesAdviceWinClass(QtGui.QMainWindow, AdviseDialogWin1):               #Ventana de advertencia de error sobre el número de frames que debe tener el stack
     def __init__(self, parent = PlotDialogWinClass):
         super(FramesAdviceWinClass, self).__init__()
         self.setupUi(self)
@@ -173,7 +168,7 @@ class FramesAdviceWinClass(QtGui.QMainWindow, AdviseDialogWin1):               #
         self.setWindowModality(QtCore.Qt.ApplicationModal)
         
         
-class FileTypeAdviceWinClass(QtGui.QMainWindow, ErrorDialogWin1):              #Ventana de advertencia de error
+class FileTypeAdviceWinClass(QtGui.QMainWindow, ErrorDialogWin1):              #Ventana de advertencia de error sobre el tipo de archivo (debe ser tipo tif)
     def __init__(self, parent = MainWinClass):
         super(FileTypeAdviceWinClass, self).__init__()
         self.setupUi(self)
@@ -190,7 +185,8 @@ class FileTypeAdviceWinClass2(QtGui.QMainWindow, ErrorDialogWin2):             #
         
 
 class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #Ventana con la tabla de contornos
-    def __init__(self, ContoursDict, TimeSerDict, imv1, alto, ancho, mascara, parent = MainWinClass):
+    def __init__(self, ContoursDict, TimeSerDict, imv1, alto, ancho, mascara, \
+                                                        parent = MainWinClass):
         super(ContourTableWinClass, self).__init__()
         self.setupUi(self)
         
@@ -203,20 +199,19 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         self.botones_series = QtGui.QButtonGroup()                             #Grupo de radio buttons
         self.botones_remove = QtGui.QButtonGroup()
         
-        self.LabelCheckBox.clicked.connect(lambda: self.LabelContour(imv1, mascara, ContoursDict, alto, ancho))
-        self.ContourCheckBox.clicked.connect(lambda: self.LabelContour(imv1, mascara, ContoursDict, alto, ancho))
-        
-        
+        self.LabelCheckBox.clicked.connect(lambda: self.LabelContour(imv1, \
+                                        mascara, ContoursDict, alto, ancho))
+        self.ContourCheckBox.clicked.connect(lambda: self.LabelContour(imv1, \
+                                        mascara, ContoursDict, alto, ancho))
         
 #        self.TimeSerDict = TimeSerDict
-        
-        for key in ContoursDict.keys():                                        #Para saber las posiciones de cada ROI encontrada   
+        #Para generar la tabla de contornos
+        for key in ContoursDict.keys():                                           
             contorno = ContoursDict[key];
             pos = contorno[0,0]
 
             item1 = QtGui.QRadioButton(str(pos))                               #Ponemos un radiobutton en cada renglón
             item1.setChecked(False)            
-#            item1.clicked.connect(PlotTimeSeries(self.botones_series, TimeSerDict, self.TimeSeriesGraph))                              #Si el radio button se presiona, mándalo a la función CheckBox
             item1.clicked.connect(lambda: self.PlotTimeSeries(TimeSerDict))    #https://www.tutorialspoint.com/pyqt/pyqt_qradiobutton_widget.htm
             self.botones_series.addButton(item1)                               #El radio button es parte del grupo radio buttons
             self.ContoursTable.setCellWidget(renglon, 1, item1)                #El string y la check Box se ponen en el i-ésimo renglón y columna 1 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
@@ -226,12 +221,12 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
            
             item3 = QtGui.QRadioButton()                                       #Ponemos un radiobutton en cada renglón
             item3.setChecked(False)            
-#            item3.clicked.connect(self.QuitarROI)                             #Si el radio button se presiona, mándalo a la función CheckBox
+            item3.clicked.connect(lambda: self.RemoveROI(TimeSerDict))                             #Si el radio button se presiona, mándalo a la función CheckBox
             self.botones_remove.addButton(item3)                               #El radio button es parte del grupo radio buttons
             self.ContoursTable.setCellWidget(renglon, 2, item3)                #El string y la check Box se ponen en el i-ésimo renglón y columna 1 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
-                          
-                                            
+                                                                      
             renglon = renglon + 1                                              #Para pasar al siguiente renglón
+
                            
         self.ContoursTable.setHorizontalHeaderLabels(str("No.;Plot [Pos]\
         ;Remove").split(";"))                                                  #Etiqueta de la columna 
@@ -242,7 +237,9 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
 #        self.ContoursTable.resizeColumnToContents(2)
 #        self.ContoursTable.setFixedWidth(self.ContoursTable.columnWidth(0) + \
 #        self.ContoursTable.columnWidth(1) + self.ContoursTable.columnWidth(2))
-         
+
+
+    #Para graficar las series de tiempo en la tabla de contornos (a partir del diccionario de series de tiempo)     
     def  PlotTimeSeries(self, TimeSerDict):            
         self.TimeSeriesGraph.clear() 
         boton = abs(self.botones_series.checkedId())                           #ID del botón seleccionado algo falla con esto            
@@ -254,37 +251,54 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         ItemGrafica = pg.PlotCurveItem(pen=(0,255,255))                        #Se hace un ítem de una gráfica  
         ItemGrafica.setData(plot1)                                             #Se agregan los datos al ítem
         self.TimeSeriesGraph.addItem(ItemGrafica)                              #Se agrega el ítem a la GUI  
+
+        
+    #Para quitar ROIs a partir de la tabla
+    def RemoveROI(self, TimeSerDict):
+        boton = abs(self.botones_remove.checkedId())                           #ID del botón seleccionado algo falla con esto            
+        ID = boton -2                                                          #Hay que corregir el ID, porque empieza con +2 por alguna razón
+        key = self.ContoursTable.item(ID,0).text()                             #Texto que aparece a la izquierda del botón seleccionado        
+        key = int(key)                                                         #Hay que cambiarlo a integer porque era string, este es el key del diccionario          
         
 
+        print(key)
+        BLA=self.ContoursTable.currentRow()
+        print(BLA)
+        self.ContoursTable.removeRow(self.ContoursTable.currentRow())
+        
+        
+
+        
+    #Para controlar las checkbox que muestran los contornos y las etiquetas
     def LabelContour(self, imv1, mascara, ContoursDict, alto, ancho):
-        if self.ContourCheckBox.isChecked() == True:
-             if self.LabelCheckBox.isChecked() == True:                 
+        if self.ContourCheckBox.isChecked() == True:                           #Si la check box de los contornos está activada
+             if self.LabelCheckBox.isChecked() == True:                        #Si la check box de las etiquetas está activada
                  imv1.removeItem(self.TopContourItem)
                  self.TopContourItem = pg.ImageItem(mascara)                   #Hacemos el ítem para mostrar la imagen de contornos
                  imv1.addItem(self.TopContourItem)                             #Ponemos la imagen de contornos encima del video
 
-                 for key in ContoursDict.keys():                                                        
-                     text = pg.TextItem(anchor=(0.3,0.3), fill=(0, 0, 0, 50)) 
+                 for key in ContoursDict.keys():                               #Para poner las etiquetas de los contornos                         
+                     text = pg.TextItem(anchor=(0.3,0.3), fill=(0, 0, 0, 150)) 
                      text.setText(str(key), color=(255, 255, 255))             #Texto que se desplegará al lado de la ROI
                      text.setParentItem(self.TopContourItem) 
                      contorno = ContoursDict[key];
                      a,b = contorno[0,0];
                      text.setPos(a,b)                       
                  
-             else:
+             else:                                                             #Si la check box de las etiquetas no está activada
                  imv1.removeItem(self.TopContourItem)          
                  self.TopContourItem = pg.ImageItem(mascara)                   #Hacemos el ítem para mostrar la imagen de contornos
                  imv1.addItem(self.TopContourItem)                             #Ponemos la imagen de contornos encima del video
 
-        if self.ContourCheckBox.isChecked() == False:            
-            if self.LabelCheckBox.isChecked() == True:
-               imv1.removeItem(self.TopContourItem)
+        if self.ContourCheckBox.isChecked() == False:                          #Si la check box de los contornos no está activada
+            if self.LabelCheckBox.isChecked() == True:                         #Si la check box de las etiquetas está activada
+               imv1.removeItem(self.TopContourItem)                            #Se va a quitar todo y se va a desactivar la check box de etiquetas
                self.TopContourItem = pg.ImageItem(mascara)                 
                self.LabelCheckBox.setChecked(False) 
                 
-            else:
-               imv1.removeItem(self.TopContourItem)
-               self.TopContourItem = pg.ImageItem(mascara) 
+            else:                                                              #Si la check box de las etiquetas no está activada
+               imv1.removeItem(self.TopContourItem)                            #Entonces hay que quitar todo
+               self.TopContourItem = pg.ImageItem(mascara)                     
  
 
 
