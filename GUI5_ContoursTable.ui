@@ -18,7 +18,11 @@
     <widget class="PlotWidget" name="TimeSeriesGraph"/>
    </item>
    <item>
-    <widget class="QTableWidget" name="ContoursTable"/>
+    <widget class="QTableWidget" name="ContoursTable">
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">

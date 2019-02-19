@@ -260,14 +260,18 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         key = self.ContoursTable.item(ID,0).text()                             #Texto que aparece a la izquierda del botón seleccionado        
         key = int(key)                                                         #Hay que cambiarlo a integer porque era string, este es el key del diccionario          
         
-
         print(key)
         BLA=self.ContoursTable.currentRow()
         print(BLA)
         self.ContoursTable.removeRow(self.ContoursTable.currentRow())
         
         
-
+#        model = self.model
+#        indices = self.ContoursTable.selectionModel().selectedRows() 
+#        for index in sorted(indices):
+#                model.removeRow(index.row()) 
+        
+        
         
     #Para controlar las checkbox que muestran los contornos y las etiquetas
     def LabelContour(self, imv1, mascara, ContoursDict, alto, ancho):
