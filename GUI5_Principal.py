@@ -226,7 +226,7 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
            
             item3 = QtGui.QRadioButton(str(key))                               #Ponemos un radiobutton en cada renglón
             item3.setChecked(False)            
-            item3.clicked.connect(lambda: self.RemoveROI())                    #Si el radio button se presiona, mándalo a la función CheckBox
+            item3.clicked.connect(lambda: self.RemoveROI(imv1, alto, ancho))                    #Si el radio button se presiona, mándalo a la función CheckBox
             self.botones_remove.addButton(item3)                               #El radio button es parte del grupo radio buttons
             self.ContoursTable.setCellWidget(renglon, 2, item3)                #El string y la check Box se ponen en el i-ésimo renglón y columna 1 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
                                                                       
@@ -260,7 +260,7 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
 
         
     #Para quitar las ROIs a partir de la tabla
-    def RemoveROI(self):
+    def RemoveROI(self, imv1, alto, ancho):
         
         button = self.sender()                                                 #https://stackoverflow.com/questions/54316791/pyqt5-how-does-a-button-delete-a-row-in-a-qtablewidget-where-it-sits        
         row = self.ContoursTable.indexAt(button.pos()).row()                   #Renglón donde está la checkbox que se ha presionado
@@ -268,28 +268,32 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         key = int(key)                                                         #Hay que cambiarlo a integer porque era string, este es el key del diccionario                                                                                         
 
         self.ContoursTable.removeRow(row)                                      #Se quita el renglón de la tabla
-                
-        #Hay que cambiar los diccionarios de contornos y de series de tiempo
-        del self.ContoursDict[key]                                             #Hay que quitar la ROI del diccionario de ROIs
-        del self.TimeSerDict[key]
-        
-        #Hay que generar una nueva máscara quitando la ROI 
 
+        
+        #Hay que generar una nueva máscara donde se haya quitado la ROI
+        binaria = np.zeros((alto, ancho))+1;                                   #Máscara binaria para obtener la serie de tiempo
+        lista_keys = list(self.ContoursDict.keys())                            #Keys del diccionario de contornos
+        pos_key = lista_keys.index(int(key))                                   #Para saber la posición específica del contorno que queremos quitar (porque si se quitan ROIs, la posición se pierde!!!)
+        contours = list(self.ContoursDict.values())                            #Obtenemos una lista de contornos
+        cv2.drawContours(binaria, contours, int(pos_key), (0,0,0),-1);         #Dibujamos el contorno relleno generando así la máscara binaria, int porque antes key es str
+        binaria = np.transpose(binaria)                                        #Hay que trasponerla porque la máscara se traspuso antes para mostrarla en el video
+
+        for i in range(4):                                                     #¿se puede quitar este for?
+            self.mascara[:,:,i]=self.mascara[:,:,i]*binaria                    #Multiplicamos cada frame de la máscara original por la nueva máscara (para quitarla)
+                        
+#        cv2.imshow('ImageWindow', binaria)                                    #Para debug
+        
+        #Hay que el contorno y la serie de tiempo de los diccionarios correspondientes
+        del self.ContoursDict[key]                                             #Hay que quitar la ROI del diccionario de ROIs
+        del self.TimeSerDict[key]                      
+
+        #Hay que llamar a la función de contornos para que los quite si debe hacerlo
+        self.LabelContour(imv1, alto, ancho)
 
         #Hay que quitar la gráfica si se está quitando la ROI??
         
-        
-        #Hay que quitar la ROI si están los contornos dibujados en el video
-        
-        
-        #Hay que quitar la etiqueta si está encima del video y es la ROI que se quitó
-        
-        
         #Hay que agregar un botón para la nueva ROI
         
-
-
-
 
     #Para controlar las checkbox que muestran los contornos y las etiquetas
     def LabelContour(self, imv1, alto, ancho):

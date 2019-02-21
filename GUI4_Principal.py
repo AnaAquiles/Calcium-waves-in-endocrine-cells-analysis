@@ -399,7 +399,8 @@ class MyWindowClass(QtGui.QMainWindow, Ui_MainWindow ):
         ID = boton -2                                                          #Hay que corregir el ID, porque empieza en -2 por alguna razón
         key = self.Tabla.item(ID,0).text()                                     #Key del diccionario (texto que aparece en la primer columna de la tabla)
         binaria = np.zeros((self.alto, self.ancho));                       #Máscara binaria para obtener la serie de tiempo
-        lista_keys = list(self.ROI_dict.keys())                                #Hay que revisar la lista de las llaves
+        lista_keys = list(self.ROI_dict.keys())       
+                         #Hay que revisar la lista de las llaves
         pos_key = lista_keys.index(int(key))                                   #Para saber la posición específica del contorno que queremos observar (porque si se quitan ROIs, la posición se pierde!!!)
         cv2.drawContours(binaria,self.contours,int(pos_key),(255,255,255),-1);      #Dibujamos el contorno relleno generando así la máscara binaria, int porque antes key es str
         area = cv2.countNonZero(binaria)                                   #Encontramos el número de pixeles dentro del contorno (área)
