@@ -3,35 +3,25 @@
 Created on Thu Jan 10 13:37:00 2019
 
 @author: akire
+
+Este programa muestra como graficar de forma directa con matplotlib una red en 
+ventanas independientes, también muestra cómo graficar una red embebida dentro 
+de la GUI
 """
 import sys
-from PyQt5 import QtGui, uic, QtCore
-
+from PyQt5 import QtGui, uic
 import numpy as np
 import networkx as nx
-#from PyQt5.QtWidgets import QPushButton
-
-
-#http://blog.rcnelson.com/building-a-matplotlib-gui-with-qt-designer-part-1/
-from matplotlib.figure import Figure
-#from matplotlib.backends.backend_qt4agg import (
-#    FigureCanvasQTAgg as FigureCanvas,
-#    NavigationToolbar2QT as NavigationToolbar)
-
-
-
-#https://stackoverflow.com/questions/12459811/how-to-embed-matplotlib-in-pyqt-for-dummies
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+from pyqtgraph.Qt import QtWidgets
 import pyqtgraph as pg
 
 
 form_class_0 = uic.loadUiType("G:\\Mi unidad\\GUI_HIP\\GUITHUB_VentanasSeperadas\\GUI4_MainWin.ui")[0]
 form_class_1 = uic.loadUiType("G:\\Mi unidad\\GUI_HIP\\GUITHUB_VentanasSeperadas\\GUI4_PlotTableWin.ui")[0]
 
-        
 
 class OtherWindow(QtWidgets.QDialog, form_class_1):
     def __init__(self, parent = None):
@@ -91,11 +81,8 @@ class OtherWindow(QtWidgets.QDialog, form_class_1):
 
         self.show()
         
-        
-        
-        
 
-#        #Con esta parte agregas una gráfica de matplotlib 
+#        #Con esta parte agregas una gráfica usual de matplotlib (gráfica de puntos)
 #        fig1 = Figure()
 #        ax1f1 = fig1.add_subplot(111)
 #        ax1f1.plot(np.random.rand(20))        
@@ -109,40 +96,23 @@ class OtherWindow(QtWidgets.QDialog, form_class_1):
         self.toolbar = NavigationToolbar(self.canvas, self.mplwindow, coordinates=True)
         self.mplvl.addWidget(self.toolbar)            
 
-        
-    def samplemat(self, dims):
-        aa = np.zeros(dims)
-        for i in range(min(dims)):
-            aa[i, i] = i
-        return aa
-        
 
 class myWindow(QtGui.QMainWindow, form_class_0):
     
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
-        
-#        super(myWindow, self).__init__()
-#        self.ui = myWindow() 
         self.setupUi(self)
-#        uic.loadUi("GUI4_MainWin.ui", self)
-        
         self.findRoiAction.triggered.connect(self.FindCells)
         
-        
-        
+
     def FindCells(self):
         print("Entra a la función")
         self.myOtherWindow = OtherWindow()
-#        self.myOtherWindow.show()
-        
-        
 
-        
+
+
 app = QtGui.QApplication(sys.argv)
 MyWindow = myWindow(None)
 MyWindow.show()
 app.exec_()
 
-#Para los grafos revisar http://www.pyqtgraph.org/documentation/graphicsItems/graphitem.html
-#y el ejemplo de pyqtgraph de graphItem
