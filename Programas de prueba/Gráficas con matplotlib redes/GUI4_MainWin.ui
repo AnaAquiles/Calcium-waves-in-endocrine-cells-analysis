@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>470</width>
+    <height>806</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>470</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="openAction"/>
+    <addaction name="separator"/>
+    <addaction name="saveImgAction"/>
+    <addaction name="separator"/>
+    <addaction name="LoadImageAction"/>
+    <addaction name="saveTimeSerAction"/>
+    <addaction name="saveImgesAction"/>
+   </widget>
+   <widget class="QMenu" name="menuCells">
+    <property name="title">
+     <string>Cells</string>
+    </property>
+    <addaction name="findRoiAction"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuCells"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QDockWidget" name="dockWidget">
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="ImageView" name="imv1"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_2">
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <widget class="QSpinBox" name="Text1">
+       <property name="minimum">
+        <number>2</number>
+       </property>
+       <property name="maximum">
+        <number>10</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="Label1">
+       <property name="text">
+        <string>Window Size</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="button1">
+       <property name="text">
+        <string>Show ROI's</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="button2">
+       <property name="text">
+        <string>Show Labels</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="ResetButton">
+       <property name="text">
+        <string>Reset</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <action name="openAction">
+   <property name="text">
+    <string>Open Stack</string>
+   </property>
+  </action>
+  <action name="saveImgAction">
+   <property name="text">
+    <string>Save Binary Image</string>
+   </property>
+  </action>
+  <action name="saveTimeSerAction">
+   <property name="text">
+    <string>Save Time Series</string>
+   </property>
+  </action>
+  <action name="findRoiAction">
+   <property name="text">
+    <string>Find Cells</string>
+   </property>
+  </action>
+  <action name="LoadImageAction">
+   <property name="text">
+    <string>Load Binary Image</string>
+   </property>
+  </action>
+  <action name="saveImgesAction">
+   <property name="text">
+    <string>Save Binary Images</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ImageView</class>
+   <extends>QGraphicsView</extends>
+   <header location="global">pyqtgraph</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
