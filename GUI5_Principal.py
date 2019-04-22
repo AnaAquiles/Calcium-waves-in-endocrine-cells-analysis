@@ -97,7 +97,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         #Analisis por tipo celular
         if cellType == 0:                                                      #Si el botón que eligió es 0 (hipófisis)
             #Se encuentran las células, se obtiene un diccionario con los contornos y una imagen binaria, los superponemos al video
-            self.mascara, self.ROI_dict = PituitarySegm(inFrame, finFrame)     #Llama a la func que hace la segmentación [Falta pasarle la imagen original!!!]
+            self.mascara, self.ROI_dict = PituitarySegm(inFrame, finFrame, self.data)     #Llama a la func que hace la segmentación [Falta pasarle la imagen original!!!]
 
             #Crear el diccionario de series de tiempo (se va a usar para graficar en la ventana de tabla)
             self.TimeSerDict = ContourTimeSeries(self.data, self.ROI_dict, \

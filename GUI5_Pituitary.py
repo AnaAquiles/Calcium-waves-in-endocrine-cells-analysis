@@ -9,12 +9,18 @@ import cv2
 import numpy as np
 
 
-def PituitarySegm(frame0, frame1):
+def PituitarySegm(frame0, frame1, data):
     #abs(F - Fmean)/Fmean para aplanarla 
     #buscar la forma de normalizarla en el dominio!!!
-    print('Segmentación de Hipófisis, aquí hay que poner lo que está haciendo Ame')
+
     
 
+
+#%% 
+    #Esta parte es la que solo llama a la imagen binaria que ya se tiene
+    #No hace ningún cálculo, es para la pueba de concepto
+    print('Segmentación de Hipófisis, aquí hay que poner lo que está haciendo Ame')
+    
     binaria = cv2.imread("G:\\Mi unidad\\EAGV\\Proyectos\\Segmentacion y Analisis de Celulas con GUI\\Datos brutos\\Videos_Daniel\\1\\BINARIA2.png",0)                                 #Para que se abra en blanco y negro (1 solo canal)                                         #El stack de imágenes se pasa a un arreglo
     (alto, ancho)=binaria.shape 
 
@@ -51,4 +57,5 @@ def PituitarySegm(frame0, frame1):
 #    self.TablaFinal()        
 #
 #    self.Fig_dict = {}                                                     #Diccionario que tendrá las ROIs remarcadas con los checkbox
+#%%
     return (mascara2, ROI_dict)   
