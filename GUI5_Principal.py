@@ -90,14 +90,16 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         
         #Para obtener la información que introdujo el usuario en la ventana de diálogo: https://stackoverflow.com/questions/52560496/getting-a-second-window-pass-a-variable-to-the-main-ui-and-close
         if PlotDialogWin.exec_() == QtWidgets.QDialog.Accepted:
-            inFrame = PlotDialogWin.frame1
-            finFrame = PlotDialogWin.frame2
-            cellType = PlotDialogWin.indexOfChecked
+            inFrame = PlotDialogWin.frame1                                     #Frame inicial para el análisis
+            finFrame = PlotDialogWin.frame2                                    #Frame final para el análisis
+            CellRad = PlotDialogWin.CellSize                                   #Radio de la célula
+            cellType = PlotDialogWin.indexOfChecked                            #Neuronas o hipófisis
+            
             
         #Analisis por tipo celular
         if cellType == 0:                                                      #Si el botón que eligió es 0 (hipófisis)
             #Se encuentran las células, se obtiene un diccionario con los contornos y una imagen binaria, los superponemos al video
-            self.mascara, self.ROI_dict = PituitarySegm(inFrame, finFrame, self.data)     #Llama a la func que hace la segmentación [Falta pasarle la imagen original!!!]
+            self.mascara, self.ROI_dict = PituitarySegm(inFrame, finFrame, CellRad, self.data)     #Llama a la func que hace la segmentación [Falta pasarle la imagen original!!!]
 
             #Crear el diccionario de series de tiempo (se va a usar para graficar en la ventana de tabla)
             self.TimeSerDict = ContourTimeSeries(self.data, self.ROI_dict, \
@@ -144,8 +146,9 @@ class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
     #2.- Que al menos la porción de video contenga 300 frames
     #3.- Que no se rebase el número total de frames del stack cargado
     def CheckFramesInfo(self):
-        self.frame1 = self.Fr1_spinBox.value();
-        self.frame2 = self.Fr2_spinBox.value();   
+        self.frame1 = self.Fr1_spinBox.value()
+        self.frame2 = self.Fr2_spinBox.value()   
+        self.CellSize = self.Fr3_spinBox.value()
       
         if (self.frame2 <= self.frame1) or (self.frame2 - self.frame1 < 300) \
             or (self.frame2 - self.frame1 > self.NoFrames) :            

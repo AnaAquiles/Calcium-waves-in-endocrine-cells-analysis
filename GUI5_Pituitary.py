@@ -8,14 +8,37 @@ Aquí va la parte de clasificación (América)
 import cv2
 import numpy as np
 
+from skimage.feature import blob_log
+from math import sqrt
+import matplotlib.pyplot as plt
 
-def PituitarySegm(frame0, frame1, data):
+
+
+def PituitarySegm(frame0, frame1, CellRad, data):
     #abs(F - Fmean)/Fmean para aplanarla 
     #buscar la forma de normalizarla en el dominio!!!
 
+    #Detección de spots    
+    DesVest = np.std(data, 0)                                                  #Imagen de la desviación estándar
     
-
-
+    blobs_log = blob_log(DesVest, min_sigma=CellRad, max_sigma=CellRad + 5, num_sigma=1, \
+                         threshold=.1)                                         #Detección de spots
+    
+    blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)                                #Compute radii in the 3rd column.
+    
+    fig, axes = plt.subplots()
+    #ax = axes.ravel()
+    
+    axes.imshow(DesVest, cmap='seismic')
+    
+    for blob in blobs_log:
+        y, x, r = blob
+        c = plt.Circle((x, y), r, color='yellow', linewidth=1, fill=False)
+        axes.add_patch(c)
+    axes.set_axis_off()
+    
+    plt.tight_layout()
+    plt.show()
 #%% 
     #Esta parte es la que solo llama a la imagen binaria que ya se tiene
     #No hace ningún cálculo, es para la pueba de concepto
