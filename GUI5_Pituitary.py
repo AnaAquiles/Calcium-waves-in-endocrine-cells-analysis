@@ -18,27 +18,50 @@ def PituitarySegm(frame0, frame1, CellRad, data):
     #abs(F - Fmean)/Fmean para aplanarla 
     #buscar la forma de normalizarla en el dominio!!!
 
+    (NoFrames, alto, ancho) = data.shape()
+    DiameterDict = {3:1, 5:2, 7:2.5, 9:3, 11:4, 13:4.5}                        #Variación sigma con el diámetro (impar)
+    Sigma = DiameterDict[CellRad]                                              #Sigma para el blob
+
     #Detección de spots    
-    DesVest = np.std(data, 0)                                                  #Imagen de la desviación estándar
+    DesVest = np.std(data, 0)                                                  #Imagen de la desviación estándar    
+    blobs_log = blob_log(DesVest, min_sigma=Sigma, max_sigma=Sigma, \
+                         num_sigma=1, threshold=.1)                            #Detección de spots
     
-    blobs_log = blob_log(DesVest, min_sigma=CellRad, max_sigma=CellRad + 5, num_sigma=1, \
-                         threshold=.1)                                         #Detección de spots
-    
-    blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)                                #Compute radii in the 3rd column.
-    
+    blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)                                #Compute radii in the 3rd column.    
     fig, axes = plt.subplots()
-    #ax = axes.ravel()
-    
     axes.imshow(DesVest, cmap='seismic')
     
     for blob in blobs_log:
         y, x, r = blob
         c = plt.Circle((x, y), r, color='yellow', linewidth=1, fill=False)
         axes.add_patch(c)
+                        
     axes.set_axis_off()
     
     plt.tight_layout()
     plt.show()
+    
+#    print('Paso 0')
+#    #Clasificación de las series en los spots    
+#    for blob in blobs_log:
+#        binaria = np.zeros((alto, ancho))                                      #Imagen binaria que contendrá la máscara del spot
+#        y, x, r = blob                                                         #Centro y radio del spot
+#        cv2.circle(binaria,(int(x),int(y)), int(r), (255,255,255), -1)         #Creación de la máscara del spot
+#        area = cv2.countNonZero(binaria)                                       #Encontramos el número de pixeles diferentes de cero
+#        coordenadas = np.argwhere(binaria == 255)                              #Buscamos las coordenadas de los pixeles blancos en la imagen binaria
+#        SerieTiempo = np.zeros(NoFrames)                                       #Contendrá la serie de tiempo
+#
+#        for frame in range(NoFrames):                                          
+#            imagen_i = data[frame,:,:]                                         #Recorremos cada frame
+#            suma = 0                                                           #Suma de los pixeles en el frame
+#            for coordenada in coordenadas:                                     #Recorremos cada coordenada
+#                suma = suma + imagen_i[coordenada[0],coordenada[1]]            #Suma de las intensidades
+#            promedio = suma/area                                               #Sacamos el promedio
+#            SerieTiempo[frame] = round(promedio, 2)                            #El promedio se guarda en la serie
+#            
+#                                                                               #Función que hace la clasificación de la serie
+    
+    
 #%% 
     #Esta parte es la que solo llama a la imagen binaria que ya se tiene
     #No hace ningún cálculo, es para la pueba de concepto
