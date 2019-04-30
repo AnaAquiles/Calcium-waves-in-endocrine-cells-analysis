@@ -15,6 +15,22 @@ import matplotlib.pyplot as plt
 
 
 def Clasification(serie):
+    #Calcular el mínimo de la serie 
+    #Dividir la serie entre el mínimo
+    #Ajustar una recta a la serie pero solo con los primeros 50 valores
+    #Restar a la serie la recta encontrada
+    
+    #Serie-promedio/promedio  
+    
+    #Calcular el sesgo
+    
+    #Calcular la entropía
+    
+    #Normalizar en el eje Y
+    
+    #Cálculo del área en pasos de 1/#frames
+    
+    
     print('H')
     
     
@@ -46,7 +62,7 @@ def PituitarySegm(frame0, frame1, CellRad, data):
     plt.tight_layout()
     plt.show()
     
-    #Imagen final de la máscara binaria!! con cv2 van a salir cruces y cosas raras
+    #Imagen final de la máscara binaria!! con cv2 van a salir cruces y cosas raras!!
     mask = np.zeros((alto, ancho))
     
     #Generación de las series en los spots    
@@ -66,9 +82,13 @@ def PituitarySegm(frame0, frame1, CellRad, data):
                 suma = suma + imagen_i[coordenada[0],coordenada[1]]            #Suma de las intensidades
             promedio = suma/area                                               #Sacamos el promedio
             SerieTiempo[frame] = promedio                                      #El promedio se guarda en la serie        
-        Clasification(SerieTiempo)                                             #Función que hace la clasificación de la serie obtenida
+        resultado = Clasification(SerieTiempo)                                             #Función que hace la clasificación de la serie obtenida
         
-    
+        if resultado==1:                                                       #Si la clasificación indica que la región sí es célula
+            print('sí es célula!')
+            
+        else:
+            print('No es célula')
     
     
 #%% 
