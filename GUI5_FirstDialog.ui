@@ -230,7 +230,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Select the radius of the cells (in pixels):</string>
+    <string>Select the diameter of the cells (in pixels):</string>
    </property>
   </widget>
   <widget class="QSpinBox" name="Fr3_spinBox">

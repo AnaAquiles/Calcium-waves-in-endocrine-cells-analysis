@@ -7,31 +7,68 @@ Aquí va la parte de clasificación (América)
 """
 import cv2
 import numpy as np
-
+from skimage.draw import circle
 from skimage.feature import blob_log
 from math import sqrt
 import matplotlib.pyplot as plt
+import scipy.stats
+from collections import Counter
+import math
+
+
+def Entropia(Serie):
+    longitud = len(Serie)
+    diccionario = Counter(np.round(Serie, decimals=1));
+    prob = np.asarray(list(diccionario.values()));
+    prob = prob/longitud;
+    suma = 0;
+    NoOperaciones = len(prob);
+    for k in range(NoOperaciones):
+        suma = suma + (prob[k]*math.log(prob[k]));
+    diccionario.clear();    
+    return[abs(suma)]
 
 
 
-def Clasification(serie):
+def Clasification(Serie):
     #Calcular el mínimo de la serie 
     #Dividir la serie entre el mínimo
-    #Ajustar una recta a la serie pero solo con los primeros 50 valores
+    #Ajustar una recta a todas las series de un solo tratamiento (esto no se puede hacer)
     #Restar a la serie la recta encontrada
     
-    #Serie-promedio/promedio  
     
-    #Calcular el sesgo
-    
-    #Calcular la entropía
-    
-    #Normalizar en el eje Y
-    
+    #Serie-promedio/promedio ó *Serie/minimo de la Serie    
+    #*Ajustar una recta a la serie y restarla a la original, pero esto va a traer problemas!!!    
+    #O primero hacer el ajuste y luego dividir entre el mínimo??
+    #Calcular el sesgo    
+    #Calcular la entropía    
+    #Normalizar en el eje Y    
     #Cálculo del área en pasos de 1/#frames
     
     
-    print('H')
+    #Longitud de la serie
+    longitud = len(Serie)
+    #(Serie-promedio)/promedio
+    Serie = (Serie-np.mean(Serie))/np.mean(Serie)
+    
+    #Sesgo
+    sesgo = scipy.stats.skew(Serie);
+    
+    #Entropía
+    entrop = Entropia(Serie)
+    
+    #Normalización de la serie
+    Serie_min = np.amin(Serie);
+    Serie_max = np.amax(Serie);
+    Serie = (Serie - Serie_min)/(Serie_max-Serie_min);
+    
+    #Cálculo del área bajo la curva
+    area = scipy.integrate.simps(Serie, dx=1/longitud);
+    
+    #Clasificación
+    resultado = -1.06907683 - 0.58335174*area + 2.46826548*sesgo - 0.24431587*entrop
+    
+    return(resultado)
     
     
 def PituitarySegm(frame0, frame1, CellRad, data):
@@ -49,18 +86,20 @@ def PituitarySegm(frame0, frame1, CellRad, data):
                          num_sigma=1, threshold=.1)                            #Detección de spots
     
     blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)                                #Compute radii in the 3rd column.    
+    
+    #Para mostrar la imagen de la desvest con los círculos superpuestos usando matplotlib 
     fig, axes = plt.subplots()
     axes.imshow(DesVest, cmap='seismic')
     
-    for blob in blobs_log:
+    for blob in blobs_log:                                                     
         y, x, r = blob
         c = plt.Circle((x, y), r, color='yellow', linewidth=1, fill=False)
         axes.add_patch(c)
     
-    axes.set_axis_off()
-    
+    axes.set_axis_off()    
     plt.tight_layout()
     plt.show()
+    
     
     #Imagen final de la máscara binaria!! con cv2 van a salir cruces y cosas raras!!
     mask = np.zeros((alto, ancho))
@@ -68,9 +107,11 @@ def PituitarySegm(frame0, frame1, CellRad, data):
     #Generación de las series en los spots    
     LenSerie = int(frame1-frame0)                                              #Longitud de la serie de tiempo (va a depender de lo que el usuario haya determinado inicialmente)
     for blob in blobs_log:                                                     #Para cada spot encontrado
-        binaria = np.zeros((alto, ancho))                                      #Imagen binaria que contendrá la máscara del spot
+        binaria = np.zeros((alto, ancho), dtype=np.uint8)                                      #Imagen binaria que contendrá la máscara del spot
         y, x, r = blob                                                         #Centro y radio del spot
-        cv2.circle(binaria,(int(x),int(y)), int(r), (255,255,255), -1)         #Creación de la máscara del spot
+        rr, cc = circle(4, 4, 3)                                               #Círculo con Skimage
+        binaria[rr, cc] = 1
+#        cv2.circle(binaria,(int(x),int(y)), int(r), (255,255,255), -1)         #Creación de la máscara del spot
         area = cv2.countNonZero(binaria)                                       #Encontramos el número de pixeles diferentes de cero
         coordenadas = np.argwhere(binaria == 255)                              #Buscamos las coordenadas de los pixeles blancos en la imagen binaria
         SerieTiempo = np.zeros(LenSerie)                                       #Contendrá la serie de tiempo
@@ -82,15 +123,22 @@ def PituitarySegm(frame0, frame1, CellRad, data):
                 suma = suma + imagen_i[coordenada[0],coordenada[1]]            #Suma de las intensidades
             promedio = suma/area                                               #Sacamos el promedio
             SerieTiempo[frame] = promedio                                      #El promedio se guarda en la serie        
-        resultado = Clasification(SerieTiempo)                                             #Función que hace la clasificación de la serie obtenida
+        resultado = Clasification(SerieTiempo)                                 #Función que hace la clasificación de la serie obtenida
+        print(resultado)
         
         if resultado==1:                                                       #Si la clasificación indica que la región sí es célula
             print('sí es célula!')
-            
+            #Aquí hay que agregar ese spot a la imagen binaria mask, tal vez convenga 
+            #hacerlo usando plt para que se marquen círculos, y no cosas pixeleadas
+            #pero habrá que ver si se puede hacer
+            #También hay que obtener el contorno de la célula "solita" imagen binaria
+            #Y también hay que agregar dicho contorno al diccionario de contornos
+            #O hasta que se tenga la mask final, hacer las dos cosas, como abajo
         else:
-            print('No es célula')
+            print(area)
     
-    
+    plt.figure(2)
+    plt.imshow(binaria)
 #%% 
     #Esta parte es la que solo llama a la imagen binaria que ya se tiene
     #No hace ningún cálculo, es para la pueba de concepto
