@@ -53,9 +53,11 @@ def Clasification(Serie):
     
     #Sesgo
     sesgo = scipy.stats.skew(Serie);
+#    print('Sesgo: '+ str(sesgo))
     
     #Entropía
     entrop = Entropia(Serie)
+#    print('entropía: '+ str(entrop))
     
     #Normalización de la serie
     Serie_min = np.amin(Serie);
@@ -64,9 +66,10 @@ def Clasification(Serie):
     
     #Cálculo del área bajo la curva
     area = scipy.integrate.simps(Serie, dx=1/longitud);
+#    print('área: '+ str(area))
     
     #Clasificación
-    resultado = -1.06907683 - 0.58335174*area + 2.46826548*sesgo - 0.24431587*entrop
+    resultado = -1.06907683 - 0.58335174*area + 2.46826548*sesgo - 0.24431587*entrop[0]
     
     return(resultado)
     
@@ -86,6 +89,7 @@ def PituitarySegm(frame0, frame1, CellRad, data):
                          num_sigma=1, threshold=.1)                            #Detección de spots
     
     blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)                                #Compute radii in the 3rd column.    
+
     
     #Para mostrar la imagen de la desvest con los círculos superpuestos usando matplotlib 
     fig, axes = plt.subplots()
@@ -104,30 +108,42 @@ def PituitarySegm(frame0, frame1, CellRad, data):
     #Imagen final de la máscara binaria!! con cv2 van a salir cruces y cosas raras!!
     mask = np.zeros((alto, ancho))
     
+    blobs_log2 = blobs_log[0:3]
+    print(blobs_log2)
     #Generación de las series en los spots    
     LenSerie = int(frame1-frame0)                                              #Longitud de la serie de tiempo (va a depender de lo que el usuario haya determinado inicialmente)
-    for blob in blobs_log:                                                     #Para cada spot encontrado
+    for blob in blobs_log2:                                                     #Para cada spot encontrado
         binaria = np.zeros((alto, ancho), dtype=np.uint8)                                      #Imagen binaria que contendrá la máscara del spot
         y, x, r = blob                                                         #Centro y radio del spot
-        rr, cc = circle(4, 4, 3)                                               #Círculo con Skimage
+        
+        #QUÉ HACER CUANDO LOS CÍRCULOS SON MÁS GRANDES QUE LA IMAGEN (ORILLAS) USAR IF?
+        rr, cc = circle(int(y), int(x), int(r))                                               #Círculo con Skimage
         binaria[rr, cc] = 1
+                
 #        cv2.circle(binaria,(int(x),int(y)), int(r), (255,255,255), -1)         #Creación de la máscara del spot
         area = cv2.countNonZero(binaria)                                       #Encontramos el número de pixeles diferentes de cero
-        coordenadas = np.argwhere(binaria == 255)                              #Buscamos las coordenadas de los pixeles blancos en la imagen binaria
+        coordenadas = np.argwhere(binaria == 1)                              #Buscamos las coordenadas de los pixeles blancos en la imagen binaria
         SerieTiempo = np.zeros(LenSerie)                                       #Contendrá la serie de tiempo
 
+        j=0
         for frame in range(frame0,frame1,1):                                   #Para generar la serie de tiempo de una longitud determinada 
             imagen_i = data[frame,:,:]                                         #Recorremos cada frame
             suma = 0                                                           #Suma de los pixeles en el frame
             for coordenada in coordenadas:                                     #Recorremos cada coordenada
                 suma = suma + imagen_i[coordenada[0],coordenada[1]]            #Suma de las intensidades
             promedio = suma/area                                               #Sacamos el promedio
-            SerieTiempo[frame] = promedio                                      #El promedio se guarda en la serie        
+            SerieTiempo[j] = promedio                                          #El promedio se guarda en la serie        
+            j=j+1                                                              #Porque el frame0 puede ser diferente de cero
+        
+#        plt.plot(SerieTiempo)
+        
+        plt.imshow(binaria)
+        
         resultado = Clasification(SerieTiempo)                                 #Función que hace la clasificación de la serie obtenida
         print(resultado)
         
-        if resultado==1:                                                       #Si la clasificación indica que la región sí es célula
-            print('sí es célula!')
+        if resultado>=0:                                                       #Si la clasificación indica que la región sí es célula
+            print(1)
             #Aquí hay que agregar ese spot a la imagen binaria mask, tal vez convenga 
             #hacerlo usando plt para que se marquen círculos, y no cosas pixeleadas
             #pero habrá que ver si se puede hacer
@@ -135,10 +151,10 @@ def PituitarySegm(frame0, frame1, CellRad, data):
             #Y también hay que agregar dicho contorno al diccionario de contornos
             #O hasta que se tenga la mask final, hacer las dos cosas, como abajo
         else:
-            print(area)
+            print(0)
     
-    plt.figure(2)
-    plt.imshow(binaria)
+#    plt.figure(2)
+#    plt.imshow(binaria)
 #%% 
     #Esta parte es la que solo llama a la imagen binaria que ya se tiene
     #No hace ningún cálculo, es para la pueba de concepto
