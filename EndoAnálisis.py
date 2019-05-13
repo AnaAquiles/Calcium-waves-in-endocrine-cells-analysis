@@ -25,12 +25,12 @@ data=np.loadtxt(filename + ".csv",delimiter=',')
 #   (CTRL y 1) y correr:
       
 #datos=np.array([data[i:i+1800] for i in range(0,3600,1800)]) # en range, colocar 0, #total de imágenes, #de iamgenes por las que se quiere separar
-#datos=np.swapaxes(data,0,1)  
+#datos=np.swapaxes(data,1,2)  
 
 # Cuando NO se tenga el mismo número de imágenes por estímulo, correr: 
 datos = np.array([data[280:420]]) #en data:, colocar el número correspondiente al límite de la primera adquisición, seguido de :
 #                             si tu estímulo está entre un valor y otro, colocar #inicio:#final
-datos = np.swapaxes(datos,1,2)
+datos = np.swapaxes(datos,0,1)
     
     
 #Normalization respect the baseline: 
