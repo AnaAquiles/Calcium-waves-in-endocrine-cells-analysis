@@ -40,6 +40,20 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QPushButton" name="addROIbutton">
+       <property name="text">
+        <string>Add ROI</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="removeROIbutton">
+       <property name="text">
+        <string>Remove ROI</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
   </layout>
