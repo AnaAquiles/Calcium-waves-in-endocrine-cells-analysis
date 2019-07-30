@@ -3,6 +3,10 @@
 Created on Mon Jan 14 13:49:57 2019
 
 @author: akire
+CAMBIÉ LA PARTE DE ELIMINAR REGIONES CON UN BOTÓN EN CADA RENGLÓN A UN SOLO BOTÓN AL LADO DE AÑADIR ROI
+Y AUNQUE PARECE QUE FUNCIONA, AL AGREGAR UN RENGLÓN A LA TABLA SE MUEVEN LOS ITEMS DE LA 
+SEGUNDA COLUMNA HACIA ABAJO, AL PARECER SOLO ES AL AGREGAR EL PRIMER RENGLÓN, DESPUÉS PARECE QUE YA NO!!!
+
 """
 
 import sys
@@ -18,6 +22,7 @@ from GUI5_Pituitary import PituitarySegm
 from GUI5_CellTimeSeries import ContourTimeSeries, ContourTimeSerie
 from PyQt5.QtWidgets import QMenu
 import re
+import csv
 
 
 
@@ -190,7 +195,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             self.TableWin = ContourTableWinClass(self.ROI_dict,\
                                 self.TimeSerDict,self.imv1, self.alto,\
                                 self.ancho, self.CellDiam, bandera_ROI, \
-                                self.data, self.NoFrames)  
+                                self.data, self.NoFrames, row=False)  
                                                                                                               
             self.TableWin.show()
             self.TableWin.ContourCheckBox.setChecked(True)                     #Marcando la checkbox de los contornos
@@ -354,7 +359,7 @@ class FileTypeAdviceWinClass2(QtGui.QMainWindow, ErrorDialogWin2):
 #Se crea la tabla de contornos presentes en la imagen 
 class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #Ventana con la tabla de contornos
     def __init__(self, ContoursDict, TimeSerDict, imv1, alto, ancho, CellRad,\
-                 bandera, data, NoFrames, parent = MainWinClass):
+                 bandera, data, NoFrames, row, parent = MainWinClass):
                                                         
         super(ContourTableWinClass, self).__init__()
         self.setupUi(self)
@@ -362,6 +367,7 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         #Esta bandera indica si hay una ROI circular que se va a añadir a 
         #la tabla
         ContourTableWinClass.bandera = bandera                                 #Para poder cambiar esta variable por fuera de la clase https://stackoverflow.com/questions/44046920/changing-class-attributes-by-reference
+        ContourTableWinClass.row = row                                         #Para saber qué renglón es el que se ha seleccionado para graficar 
         
         
         #Se hacen "self" diferentes variables aceptadas en la clase
@@ -372,7 +378,8 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         self.data = data
         self.NoFrames = NoFrames
         self.ContoursTable.setRowCount(len(self.ContoursDict))                 #Número de renglones que tendrá la tabla dependiendo del número de ROIs
-        self.ContoursTable.setColumnCount(3)                                   #Número de columnas que tendrá la tabla    
+        """REVISAR LO DE LAS TRES COLUMNAS"""
+        self.ContoursTable.setColumnCount(2)                                   #COLUMNAS QUE TENDRÁ LA TABLA, SI NO SE PONE UNA TERCER COLUMNA LA SEGUNDA COLUMNA SE MUEVE HACIA ABAJO
         self.botones_series = QtGui.QButtonGroup()                             #Grupo de radio buttons para mostrar las series
         self.botones_remove = QtGui.QButtonGroup()                             #Grupo de radio buttons para eliminar las series
         
@@ -387,9 +394,12 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         self.addROIbutton.clicked.connect(lambda: self.AddROI(imv1, alto, \
                                                               ancho))              
         
-#        #Es el botón de quitar una ROI de la tabla 
-#        self.removeROIbutton.clicked.connect(lambda: self.RemoveROI(imv1, alto, \
-#                                                              ancho))
+        #Es el botón de quitar una ROI de la tabla 
+        self.removeROIbutton.clicked.connect(lambda: self.RemoveROI(imv1, alto, \
+                                                              ancho))
+        
+        #Es el botón para guardar las ROIs y las series de tiempo
+        self.saveButton.clicked.connect(lambda: self.Save())
         
         
         #Para generar la tabla de contornos se repasa cada key del diccionario
@@ -399,10 +409,11 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
             self.ItemsTabla(renglon, key, pos, alto, ancho, imv1)                                     
             renglon = renglon + 1                                              #Para pasar al siguiente renglón
                     
-#        self.ContoursTable.setHorizontalHeaderLabels(str("No.;Plot [Pos]").split(";"))                                                  #Etiquetas de las columnas 
+        self.ContoursTable.setHorizontalHeaderLabels(str("No.;Plot [Pos]"\
+                                                         ).split(";"))         #Etiquetas de las columnas 
 
-        self.ContoursTable.setHorizontalHeaderLabels(str("No.;Plot [Pos]\
-        ;Remove").split(";"))                                                  #Etiquetas de las columnas 
+#        self.ContoursTable.setHorizontalHeaderLabels(str("No.;Plot [Pos]\
+#        ;Remove").split(";"))                                                  #Etiquetas de las columnas 
         self.ContoursTable.verticalHeader().hide()                             #Quitar letrero vertical   https://stackoverflow.com/questions/14910136/how-can-i-enable-disable-qtablewidgets-horizontal-vertical-header                                             
 
         #Mostrando las ROIs sobre el video 
@@ -433,6 +444,7 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         row = self.ContoursTable.indexAt(button.pos()).row()                   #Renglón donde está la checkbox que se ha presionado
         key = self.ContoursTable.item(row,0).text()                            #Texto que aparece en la primer columna de la tabla   
         key = int(key)                                                         #Key para el diccionario de series de tiempo
+        ContourTableWinClass.row = row
 
         #Se muestra la gráfica de la serie de tiempo
         plot1 = self.TimeSerDict[key]                                          #Serie de tiempo del diccionario        
@@ -445,24 +457,39 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
     def RemoveROI(self, imv1, alto, ancho):        
 
         #Para saber qué contorno es el que hay que quitar (a partir de su key)
-        button = self.sender()                                                 #https://stackoverflow.com/questions/54316791/pyqt5-how-does-a-button-delete-a-row-in-a-qtablewidget-where-it-sits        
-        row = self.ContoursTable.indexAt(button.pos()).row()                   #Renglón donde está la checkbox que se ha presionado
-        key = self.ContoursTable.item(row,0).text()                            #Texto que aparece en la primer columna de la tabla   
-        key = int(key)                                                         #Hay que cambiarlo a integer porque era string, este es el key del diccionario                                                                                         
+        row = ContourTableWinClass.row
+        
+        if row is False:
+            MainWinClass.statusbar.showMessage("ROI not selected", 1000)       #Para indicar en la barra de status que no hay una ROI que se pueda agregar a la tabla
+        
+        else:                                                     
+#        indices = self.ContoursTable.indexAt(self.sender().pos()).row()
+        
+        
+#        button = self.sender()                                                 #https://stackoverflow.com/questions/54316791/pyqt5-how-does-a-button-delete-a-row-in-a-qtablewidget-where-it-sits        
+#        row = self.ContoursTable.indexAt(button.pos()).row()                   #Renglón donde está la checkbox que se ha presionado
+            key = self.ContoursTable.item(row,0).text()                            #Texto que aparece en la primer columna de la tabla   
+            key = int(key)                                                         #Hay que cambiarlo a integer porque era string, este es el key del diccionario                                                                                         
 
-        #Se quita el renglón de la tabla
-        self.ContoursTable.removeRow(row)                                      #Se quita el renglón de la tabla
-
-        #Hay que quitar el contorno y la serie de tiempo de los diccionarios 
-        #correspondientes
-        del self.ContoursDict[key]                                             #Hay que quitar la ROI del diccionario de ROIs
-        del self.TimeSerDict[key]                      
-
-        #Hay que llamar a la función de LabelContour para revisar las 
-        #checkbox de la tabla 
-        self.LabelContour(imv1, alto, ancho)
-
-        #Hay que quitar la gráfica si se está quitando la ROI??        
+            #Se quita el renglón de la tabla
+            self.ContoursTable.removeRow(row)                                      #Se quita el renglón de la tabla
+    
+            #Hay que quitar el contorno y la serie de tiempo de los 
+            #diccionarios correspondientes
+            del self.ContoursDict[key]                                             #Hay que quitar la ROI del diccionario de ROIs
+            del self.TimeSerDict[key]                      
+    
+            #Hay que llamar a la función de LabelContour para revisar las 
+            #checkbox de la tabla 
+            self.LabelContour(imv1, alto, ancho)
+    
+            #Después de quitar la ROI de la tabla, ya no hay ninguna ROI 
+            #elegida dentro de la tabla, hay que poner esta bandera en False 
+            #si no va quita las ROIs consecutivas
+            ContourTableWinClass.row = False
+            
+            
+            #Hay que quitar la gráfica si se está quitando la ROI??        
                     
         
     #Para controlar las checkbox que muestran los contornos y las etiquetas 
@@ -510,22 +537,22 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         self.botones_series.addButton(item2)                                   #El radio button se agrega al grupo self.botones_series
         self.ContoursTable.setCellWidget(rowPosition, 1, item2)                #El string y la check Box se ponen en el i-ésimo renglón y columna 1 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
                     
-        item3 = QtGui.QRadioButton(str(llave))                                 #Ponemos un radiobutton en cada renglón con la key del contorno
-        item3.setChecked(False)                                                #Y que el radiobutton no esté marcado
-        item3.clicked.connect(lambda: self.RemoveROI(imv1, alto, ancho))       #Si el radio button se presiona, mándalo a la función CheckBox
-        self.botones_remove.addButton(item3)                                   #El radio button es parte del grupo self.botones_remove
-        self.ContoursTable.setCellWidget(rowPosition, 2, item3)                #El string y la check Box se ponen en el i-ésimo renglón y columna 2 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
+#        item3 = QtGui.QRadioButton(str(llave))                                 #Ponemos un radiobutton en cada renglón con la key del contorno
+#        item3.setChecked(False)                                                #Y que el radiobutton no esté marcado
+#        item3.clicked.connect(lambda: self.RemoveROI(imv1, alto, ancho))       #Si el radio button se presiona, mándalo a la función CheckBox
+#        self.botones_remove.addButton(item3)                                   #El radio button es parte del grupo self.botones_remove
+#        self.ContoursTable.setCellWidget(rowPosition, 2, item3)                #El string y la check Box se ponen en el i-ésimo renglón y columna 2 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
         return
 
 
     #Función que agrega la ROI del usuario al diccionario de ROIs, a la imagen  
     #de contornos, al diccionario de series de tiempo, a la tabla                
     def AddROI(self, imv1, alto, ancho):
+        
         flag = ContourTableWinClass.bandera                                    #Para saber qué valor tiene la variable bandera 
         if flag ==0:                                                           #0= No hay ROI en la imagen
             MainWinClass.statusbar.showMessage("There is no ROI in the image",\
                                        1000)                                   #Para indicar en la barra de status que no hay una ROI que se pueda agregar a la tabla
-            print('La bandera es cero')
 
         elif flag ==1:                                                         #1= Hay una ROI en la imagen
             
@@ -561,17 +588,57 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
             
             
             #Quitar la ROI roja del video
-            #Tal vez podría no ser necesario
+            #Por ahora se quedará así, parece que es mejor ir arrastrando 
+            #la misma ROI en lugar de dar clic cada vez 
 
             
-            #Sí hay una ROI en la imagen para añadir a la tabla
-            #hay que obtener la posición, y si ya se sabe el tamaño
-            #añadirlo al diccionario de contornos, añadirlo a la tabla
-            #añadirlo a la máscara de contornos
-            print('la bandera es uno')
+    def Save(self):
+        filename = QtGui.QFileDialog.getSaveFileName(self, 'Save File', \
+                                                     os.getenv('HOME'))        #Obtiene la ruta del SO
+        lista0 = str(filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
+        lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)        
+        #lista1 tiene la ruta incompleta de dónde guardar el archivo
+        #https://pythonprogramming.net/file-saving-pyqt-tutorial/         
         
+        #Rutas completas de donde se guardarán los archivos
+        namePos = str(lista1) + str('_ROI.csv')
+        nameData = str(lista1) + str('_Data.csv')
+        
+        #Para guardar las series de tiempo
+        series = np.array(list(self.TimeSerDict.values()))                     #Lista de listas de las series de tiempo, cada lista es una columna!!!
+        series = series.transpose()                                            #Array de series de tiempo en columnas
+        llaves = list(self.TimeSerDict.keys())                                 #Lista de las llaves de cada serie 
+        frames = np.array(list(range(len(series[:,0]))))                       #Lista con el número de frames
+        frames = frames.transpose()
+        frames = frames.reshape(len(series[:,0]),1)                            #Hay que cambiar la forma del arreglo para el siguiente paso
+        series2 = np.hstack((frames,series))                                   #Esto es para poner al inicio de cada columna el número de ROI
 
-"""CAMBIAR EL CONTROL DEL REMOVE ROI EN LA IMAGEN A LA TABLA? EN LUGAR DEL MENÚ QUE SALE DEL CLIC DERECHO??"""
+        #Generar el encabezado para el archivo de datos
+        dataHead = "Frame,"
+        for llave in llaves:
+            dataHead = dataHead + str('ROI')+str(llave)+str(',')
+        
+        dataHead = dataHead[:-1]
+
+        #Guardar el archivo de datos 
+        np.savetxt(nameData, series2, delimiter=",", fmt="%.3f", \
+                   header=dataHead, comments='')                               #%.3f es para guardar los datos como float con 3 decimales después del punto
+        #https://thatascience.com/learn-numpy/save-numpy-array-to-csv/
+        #https://stackoverflow.com/questions/36210977/python-numpy-savetxt-hea\
+        #der-has-extra-character/36211002
+        
+        #Para guardar las posiciones de las ROIs
+        llaves = np.array(llaves)
+        llaves = llaves.transpose()
+        llaves = llaves.reshape(len(llaves),1)                                 #Para usar las llaves de las ROIs como primer columna
+        pos = np.array(list(self.ContoursDict.values()))
+        pos2 = np.hstack((llaves,pos))                                          #Esta es una matriz con las columnas llaves|pos X|posY
+
+        #Guardar el archivo de datos 
+        np.savetxt(namePos, pos2, delimiter=",", fmt="%u", header='ROI, X, Y',\
+                   comments='')                                                #%.3f es para guardar los datos como float con 3 decimales después del punto        
+            
+        
                    
 app = QtGui.QApplication(sys.argv)
 MyWindow = MainWinClass(None)
