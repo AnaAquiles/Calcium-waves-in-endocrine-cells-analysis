@@ -6,8 +6,8 @@ Created on Mon Jan 14 13:49:57 2019
 CAMBIÉ LA PARTE DE ELIMINAR REGIONES CON UN BOTÓN EN CADA RENGLÓN A UN SOLO BOTÓN AL LADO DE AÑADIR ROI
 Y AUNQUE PARECE QUE FUNCIONA, AL AGREGAR UN RENGLÓN A LA TABLA SE MUEVEN LOS ITEMS DE LA 
 SEGUNDA COLUMNA HACIA ABAJO, AL PARECER SOLO ES AL AGREGAR EL PRIMER RENGLÓN, DESPUÉS PARECE QUE YA NO!!!
-
 """
+
 
 import sys
 import os
@@ -23,14 +23,11 @@ from GUI5_CellTimeSeries import ContourTimeSeries, ContourTimeSerie
 from PyQt5.QtWidgets import QMenu
 import re
 import csv
+import GUI5_Advices as adv
 
 
 
 MainWin= uic.loadUiType("GUI5_MainWin.ui")[0]                                  #Ventana que tendrá el stack y el menú
-PlotDialogWin = uic.loadUiType("GUI5_FirstDialog.ui")[0]                       #Ventana de serie tiempo completa
-AdviseDialogWin1 = uic.loadUiType("GUI5_SecondDialog.ui")[0]                   #Ventana de error, advertencia
-ErrorDialogWin1 = uic.loadUiType("GUI5_ErrorWin1.ui")[0] 
-ErrorDialogWin2 = uic.loadUiType("GUI5_ErrorWin2.ui")[0] 
 ContourTableWin = uic.loadUiType("GUI5_ContoursTable.ui")[0]
 
 
@@ -58,7 +55,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         #Si el archivo NO es tipo tiff manda un mensaje de error y se sale 
         #de la función
         if file_extention != str('tif'):
-            self.FileTypeErrorAdviceWin1 = FileTypeAdviceWinClass1()
+            self.FileTypeErrorAdviceWin1 = adv.FileTypeAdviceWinClass1()
             self.FileTypeErrorAdviceWin1.show()  
             return                                                             #Salir de la función
         
@@ -71,7 +68,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         #Si el archivo NO tiene más de 300 frames O si está abriendo una imagen
         #y NO video, manda un mensaje de error y se sale de la función
         if (len(forma) != 3 or forma[0] < 300):
-            self.FileTypeErrorAdviceWin2 = FileTypeAdviceWinClass2()
+            self.FileTypeErrorAdviceWin2 = adv.FileTypeAdviceWinClass2()
             self.FileTypeErrorAdviceWin2.show()        
             return                                                             #Salir de la función
 
@@ -95,30 +92,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         #Obtención de la viewbox y el imageitem de imv1
         self.viewbox = self.imv1.getView()                                     #La viewbox de la imagen imv1
         self.imageitem = self.imv1.getImageItem()                              #el imageitem de la imagen imv1        
-            
-        
-        #Función que permite mostrar la posición del mouse en la imaegn, 
-        #junto con el tamaño de la misma
-        #https://groups.google.com/forum/#!topic/pyqtgraph/ZlxPGqHCZJ0
-        #Se supone que esto funciona en mi máquina 
-#        def mouseMoved(evt):
-#            pos = evt[0]                                                       ## using signal proxy turns original arguments into a tuple
-#            print("En escena!")
-#            if self.viewbox.sceneBoundingRect().contains(pos):
-#                mousePoint = self.viewbox.mapSceneToView(pos)
-#                index = int(mousePoint.x())
-#                if index > 0 and index < self.ancho:
-#                    self.labelPRUEBA.setText("<span>Size: \
-#                            <span>%dx<span>%d <span>pixels, <span>Position: \
-#                            <span style='font-size: 8pt'>x=%0.1f, \
-#                            <span style='font-size: 8pt'>y=%0.1f</span>" % \
-#                            (int(self.ancho), int(self.alto), mousePoint.x(),\
-#                            mousePoint.y()))
-#
-#        proxy=pg.SignalProxy(self.imv1.scene.sigMouseMoved, rateLimit=60, \
-#                                                slot=mouseMoved)
-##        self.imv1.scene.sigMouseMoved.connect(mouseMoved)        
-  
+              
         #Función que permite mostrar la posición del mouse en la imagen, 
         #junto con el tamaño de la misma
         #En la laptop (porque no funcionó el SignalProxy)
@@ -158,7 +132,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
                                         
         #Ventana que pide datos del video y deben proporcionarse forzosamente 
         #para el análisis posterior
-        PlotDialogWin = PlotDialogWinClass(self.NoFrames)                      #"Llamamos" a la clase de la primera ventana
+        PlotDialogWin = adv.PlotDialogWinClass(self.NoFrames)                  #"Llamamos" a la clase de la primera ventana
         ItemGrafica = pg.PlotCurveItem(pen=(0,255,0))                          #Se hace un ítem de una gráfica  
         ItemGrafica.setData(self.SerieTiempo)                                  #Se agregan los datos de la serie de tiempo al ítem} 
         PlotDialogWin.TimeSeriesPlot.addItem(ItemGrafica)                      #Se agrega el ítem a la primera ventana        
@@ -276,84 +250,6 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         else:
             self.statusbar.showMessage("There is no ROI in the image",1000)    #Si no hay una ROI, avisa que no hay nada que quitar desde la barra de status
                                                                           
-        
-
-#Ventana que pide datos del video y deben proporcionarse forzosamente para el 
-#análisis posterior            
-class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
-    def __init__(self, NoFrames, parent=None):
-        super().__init__(parent)
-        self.setupUi(self)
-        
-        #Para que la nueva ventana no se pueda cerrar y esté siempre encima 
-        #de la ventana principal:
-        self.setWindowFlags(  
-        QtCore.Qt.FramelessWindowHint |
-        QtCore.Qt.WindowStaysOnTopHint )                                       #https://stackoverflow.com/questions/40866883/pyqt5-change-mainwindow-flags
-                                                                               #https://stackoverflow.com/questions/34160160/creating-window-that-has-no-close-button-in-qt
-        #Para que la ventana de dialogo no deje que se pueda modificar la 
-        #ventana principal:                                                                      
-        self.setWindowModality(QtCore.Qt.ApplicationModal)                     #https://stackoverflow.com/questions/22410663/block-qmainwindow-while-child-widget-is-alive-pyqt                                                 
-
-        #Para obtener el número de frames que tiene el stack completo 
-        #(que ya se había calculado en la ventana principal)
-        self.NoFrames = NoFrames            
-        self.FirstDialogButton.clicked.connect(self.CheckFramesInfo)           
-
-    #Se verifica primero que los datos dados por el usuario "tienen sentido" :
-    #1.- Que el frame inicial sea menor al frame final
-    #2.- Que al menos la porción de video contenga 300 frames
-    #3.- Que no se rebase el número total de frames del stack cargado
-    def CheckFramesInfo(self):
-        self.frame1 = self.Fr1_spinBox.value()
-        self.frame2 = self.Fr2_spinBox.value()   
-        self.CellSize = self.Fr3_spinBox.value()
-      
-        if (self.frame2 <= self.frame1) or (self.frame2 - self.frame1 < 300) \
-            or (self.frame2 - self.frame1 > self.NoFrames) :            
-                
-            #Ventana que avisa al usuario que eligió mal los frames inicial 
-            #y final
-            self.SecondDialogWin = FramesAdviceWinClass()
-            self.SecondDialogWin.show()           
-
-        else:
-            #Iterar sobre los radio buttons para saber cúal se eligió:
-            self.indexOfChecked = [self.CellTypeGroup.buttons()[x].isChecked() \
-                for x in range(len(self.CellTypeGroup.buttons()))].index(True)  
-            super().accept()                                                   #Call parent method
-
-
-#Mensaje de error que avisa al usuario que eligió mal los frames inicial y 
-#final para el análisis
-class FramesAdviceWinClass(QtGui.QMainWindow, AdviseDialogWin1):               #Ventana de advertencia de error sobre el número de frames que debe tener el stack
-    def __init__(self, parent = PlotDialogWinClass):
-        super(FramesAdviceWinClass, self).__init__()
-        self.setupUi(self)
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
-        self.setWindowModality(QtCore.Qt.ApplicationModal)
-        
-
-
-#Mensaje de error que sale si el archivo no es tipo tiff       
-class FileTypeAdviceWinClass1(QtGui.QMainWindow, ErrorDialogWin1):             
-    def __init__(self, parent = MainWinClass):
-        super(FileTypeAdviceWinClass1, self).__init__()
-        self.setupUi(self)
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
-        self.setWindowModality(QtCore.Qt.ApplicationModal)
-
-
-
-#Mensaje de error que sale si el archivo NO tiene más de 300 frames o si está 
-#abriendo una imagen y no video 
-class FileTypeAdviceWinClass2(QtGui.QMainWindow, ErrorDialogWin2):             
-    def __init__(self, parent = MainWinClass):
-        super(FileTypeAdviceWinClass2, self).__init__()
-        self.setupUi(self)
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
-        self.setWindowModality(QtCore.Qt.ApplicationModal)
-        
 
 
 #Se crea la tabla de contornos presentes en la imagen 
@@ -368,8 +264,7 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         #la tabla
         ContourTableWinClass.bandera = bandera                                 #Para poder cambiar esta variable por fuera de la clase https://stackoverflow.com/questions/44046920/changing-class-attributes-by-reference
         ContourTableWinClass.row = row                                         #Para saber qué renglón es el que se ha seleccionado para graficar 
-        
-        
+                
         #Se hacen "self" diferentes variables aceptadas en la clase
         self.ContoursDict = ContoursDict
         self.TimeSerDict = TimeSerDict  
@@ -378,7 +273,6 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         self.data = data
         self.NoFrames = NoFrames
         self.ContoursTable.setRowCount(len(self.ContoursDict))                 #Número de renglones que tendrá la tabla dependiendo del número de ROIs
-        """REVISAR LO DE LAS TRES COLUMNAS"""
         self.ContoursTable.setColumnCount(2)                                   #COLUMNAS QUE TENDRÁ LA TABLA, SI NO SE PONE UNA TERCER COLUMNA LA SEGUNDA COLUMNA SE MUEVE HACIA ABAJO
         self.botones_series = QtGui.QButtonGroup()                             #Grupo de radio buttons para mostrar las series
         self.botones_remove = QtGui.QButtonGroup()                             #Grupo de radio buttons para eliminar las series
@@ -395,8 +289,8 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
                                                               ancho))              
         
         #Es el botón de quitar una ROI de la tabla 
-        self.removeROIbutton.clicked.connect(lambda: self.RemoveROI(imv1, alto, \
-                                                              ancho))
+        self.removeROIbutton.clicked.connect(lambda: self.RemoveROI(imv1,  \
+                                                              alto, ancho))
         
         #Es el botón para guardar las ROIs y las series de tiempo
         self.saveButton.clicked.connect(lambda: self.Save())
@@ -463,11 +357,6 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
             MainWinClass.statusbar.showMessage("ROI not selected", 1000)       #Para indicar en la barra de status que no hay una ROI que se pueda agregar a la tabla
         
         else:                                                     
-#        indices = self.ContoursTable.indexAt(self.sender().pos()).row()
-        
-        
-#        button = self.sender()                                                 #https://stackoverflow.com/questions/54316791/pyqt5-how-does-a-button-delete-a-row-in-a-qtablewidget-where-it-sits        
-#        row = self.ContoursTable.indexAt(button.pos()).row()                   #Renglón donde está la checkbox que se ha presionado
             key = self.ContoursTable.item(row,0).text()                            #Texto que aparece en la primer columna de la tabla   
             key = int(key)                                                         #Hay que cambiarlo a integer porque era string, este es el key del diccionario                                                                                         
 
@@ -487,7 +376,6 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
             #elegida dentro de la tabla, hay que poner esta bandera en False 
             #si no va quita las ROIs consecutivas
             ContourTableWinClass.row = False
-            
             
             #Hay que quitar la gráfica si se está quitando la ROI??        
                     
@@ -537,11 +425,6 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         self.botones_series.addButton(item2)                                   #El radio button se agrega al grupo self.botones_series
         self.ContoursTable.setCellWidget(rowPosition, 1, item2)                #El string y la check Box se ponen en el i-ésimo renglón y columna 1 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
                     
-#        item3 = QtGui.QRadioButton(str(llave))                                 #Ponemos un radiobutton en cada renglón con la key del contorno
-#        item3.setChecked(False)                                                #Y que el radiobutton no esté marcado
-#        item3.clicked.connect(lambda: self.RemoveROI(imv1, alto, ancho))       #Si el radio button se presiona, mándalo a la función CheckBox
-#        self.botones_remove.addButton(item3)                                   #El radio button es parte del grupo self.botones_remove
-#        self.ContoursTable.setCellWidget(rowPosition, 2, item3)                #El string y la check Box se ponen en el i-ésimo renglón y columna 2 https://stackoverflow.com/questions/24148968/how-to-add-multiple-qpushbuttons-to-a-qtableview
         return
 
 
