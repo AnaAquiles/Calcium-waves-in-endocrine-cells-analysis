@@ -51,8 +51,7 @@
      <string>Segmentation</string>
     </property>
     <addaction name="findRoiAction"/>
-    <addaction name="actionContinue_Cell_Segmentation"/>
-    <addaction name="actionSave"/>
+    <addaction name="actionContinueSeg"/>
    </widget>
    <widget class="QMenu" name="menuNetwork_Analysis">
     <property name="title">
@@ -101,7 +100,7 @@
     <string>Reset</string>
    </property>
   </action>
-  <action name="actionContinue_Cell_Segmentation">
+  <action name="actionContinueSeg">
    <property name="text">
     <string>Load Segmentation</string>
    </property>

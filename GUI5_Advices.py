@@ -49,7 +49,8 @@ class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
         self.setWindowFlags(  
         QtCore.Qt.FramelessWindowHint |
         QtCore.Qt.WindowStaysOnTopHint )                                       #https://stackoverflow.com/questions/40866883/pyqt5-change-mainwindow-flags
-                                                                               #https://stackoverflow.com/questions/34160160/creating-window-that-has-no-close-button-in-qt
+                                                                               #https://stackoverflow.com/questions/34160160/creating-window-that-has-no-close-button-in-qt                                                                                     
+                                                                                                                                                              
         #Para que la ventana de dialogo no deje que se pueda modificar la 
         #ventana principal:                                                                      
         self.setWindowModality(QtCore.Qt.ApplicationModal)                     #https://stackoverflow.com/questions/22410663/block-qmainwindow-while-child-widget-is-alive-pyqt                                                 

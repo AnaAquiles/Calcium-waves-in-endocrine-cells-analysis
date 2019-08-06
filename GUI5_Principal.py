@@ -3,9 +3,10 @@
 Created on Mon Jan 14 13:49:57 2019
 
 @author: akire
-CAMBIÉ LA PARTE DE ELIMINAR REGIONES CON UN BOTÓN EN CADA RENGLÓN A UN SOLO BOTÓN AL LADO DE AÑADIR ROI
-Y AUNQUE PARECE QUE FUNCIONA, AL AGREGAR UN RENGLÓN A LA TABLA SE MUEVEN LOS ITEMS DE LA 
-SEGUNDA COLUMNA HACIA ABAJO, AL PARECER SOLO ES AL AGREGAR EL PRIMER RENGLÓN, DESPUÉS PARECE QUE YA NO!!!
+CAMBIÉ LA PARTE DE ELIMINAR REGIONES CON UN BOTÓN EN CADA RENGLÓN A UN SOLO 
+BOTÓN AL LADO DE AÑADIR ROI Y AUNQUE PARECE QUE FUNCIONA, AL AGREGAR UN RENGLÓN
+A LA TABLA SE MUEVEN LOS ITEMS DE LA SEGUNDA COLUMNA HACIA ABAJO, AL PARECER 
+SOLO ES AL AGREGAR EL PRIMER RENGLÓN, DESPUÉS PARECE QUE YA NO!!!
 """
 
 
@@ -31,14 +32,15 @@ MainWin= uic.loadUiType("GUI5_MainWin.ui")[0]                                  #
 ContourTableWin = uic.loadUiType("GUI5_ContoursTable.ui")[0]
 
 
-
 class MainWinClass(QtGui.QMainWindow, MainWin):    
-    def __init__(self, ROI, parent=None):
+    def __init__(self, ROI, close, parent=None):
         super().__init__(parent)        
         self.setupUi(self)
         self.findRoiAction.triggered.connect(self.CellDetection)               #El botón se conecta primero a la función que permite abrir un stack
+        self.actionContinueSeg.triggered.connect(self.ContinueSegm)
         MainWinClass.statusbar = self.statusbar                                #Para poder cambiar esta variable por fuera de la clase https://stackoverflow.com/questions/44046920/changing-class-attributes-by-reference
-        MainWinClass.ROI = ROI
+        MainWinClass.ROI = ROI                                                 #Bandera para saber si hay una ROI roja encima del video
+        MainWinClass.close = close                                             #Bandera para indicar que se va a cerrar la ventana principal
 
 
     #Esta función va a realizar la parte de segmentación 
@@ -65,7 +67,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         self.data = tif.asarray()                                              #El stack de imágenes se pasa a un arreglo
         forma = self.data.shape
         
-        #Si el archivo NO tiene más de 300 frames O si está abriendo una imagen
+        #Si el archivo NO tiene más de 300 frames ó si está abriendo una imagen
         #y NO video, manda un mensaje de error y se sale de la función
         if (len(forma) != 3 or forma[0] < 300):
             self.FileTypeErrorAdviceWin2 = adv.FileTypeAdviceWinClass2()
@@ -132,12 +134,16 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
                                         
         #Ventana que pide datos del video y deben proporcionarse forzosamente 
         #para el análisis posterior
+        """Para el futuro, revisar si es posible que la ventana tenga un 
+        botón de cerrado, ahorita no se me ocurre cómo cerrarla adecuadamente
+        porque presenta problemas con la ventana principal """
         PlotDialogWin = adv.PlotDialogWinClass(self.NoFrames)                  #"Llamamos" a la clase de la primera ventana
         ItemGrafica = pg.PlotCurveItem(pen=(0,255,0))                          #Se hace un ítem de una gráfica  
         ItemGrafica.setData(self.SerieTiempo)                                  #Se agregan los datos de la serie de tiempo al ítem} 
         PlotDialogWin.TimeSeriesPlot.addItem(ItemGrafica)                      #Se agrega el ítem a la primera ventana        
         PlotDialogWin.show()                                                   #Se muestra la ventana para pedir datos al usuario
-                
+        
+        
         #Se obtiene la información que introdujo el usuario en la ventana 
         #de diálogo anterior 
         #https://stackoverflow.com/questions/52560496/getting-a-second-window-
@@ -147,6 +153,10 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             finFrame = PlotDialogWin.frame2                                    #Frame final para el análisis
             self.CellDiam = PlotDialogWin.CellSize                             #Diámetro de la célula
             cellType = PlotDialogWin.indexOfChecked                            #Neuronas o hipófisis
+            
+        elif PlotDialogWin.exec_() == QtWidgets.QDialog.Finished:
+            print('Hay que cerrar la ventana y quitar lo que haya en el video')
+            
             
         SerieTiempoParc = self.SerieTiempo[inFrame:finFrame]                   #Serie de tiempo parcial depende de lo que introduzca el usuario
 
@@ -169,10 +179,13 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             self.TableWin = ContourTableWinClass(self.ROI_dict,\
                                 self.TimeSerDict,self.imv1, self.alto,\
                                 self.ancho, self.CellDiam, bandera_ROI, \
-                                self.data, self.NoFrames, row=False)  
+                                self.data, self.NoFrames, row=False, cancel=0,\
+                                parent=self)  
                                                                                                               
             self.TableWin.show()
             self.TableWin.ContourCheckBox.setChecked(True)                     #Marcando la checkbox de los contornos
+            
+            
             
         #0 para hipófisis, 1 para neuronas    
         elif cellType == 1:                                                    #Si el botón que eligió es 1 (neuronas)
@@ -221,7 +234,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         lista=re.findall(r'\d+', words)                                        #https://stackoverflow.com/questions/4289331/how-to-extract-numbers-from-a-string-in-python
         x=lista[3]                                                             #En teoría siempre van a estar en estas posciones de la lista los enteros de las posiciones del label
         y=lista[6]
-        print([x,y])
+        
         #https://stackoverflow.com/questions/41488864/pyqtgraph-widget-addline
         #-change-color-width
         self.ROI = pg.CircleROI([x,y], [self.CellDiam,self.CellDiam], \
@@ -234,28 +247,57 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         self.imv1.addItem(self.ROI)                                            #Se agrega la ROI circular en la imagen
         self.ROI.removeHandle(int(indice))                                     #para quitar el handle del resize (se evita que se pueda modificar el tamaño de la ROI)https://www.programcreek.com/python/example/94481/pyqtgraph.RectROI                                                           
 
-        ContourTableWinClass.bandera = 1                                       #Bandera dentro de la clase tabla que indica que sí hay una ROI circular en la imagen
-        MainWinClass.ROI = self.ROI
+        ContourTableWinClass.bandera = 1                                       #Bandera de la clase tabla que indica que sí hay una ROI roja circular en la imagen
+        MainWinClass.ROI = self.ROI                                            #Permitirá remover la ROI roja desde la tabla
 
 
     #Función que va a quitar el círculo anterior si ya hay uno mostrado 
     #(con el menú que sale al hacer clic derecho en la imagen)
     def RemoveROIimg(self):
-        bandera_ROI = ContourTableWinClass.bandera                             #Hay que obtener el valor de la bandera, par asaber si hay o no un círculo en la imagen
+        bandera_ROI = ContourTableWinClass.bandera                             #Hay que obtener el valor de la bandera, para saber si hay o no un círculo en la imagen
         if bandera_ROI == 1:
             self.imv1.removeItem(self.ROI)                                     #Si sí hay una ROI circular en la imagen, quítala
             ContourTableWinClass.bandera = 0                                   #Y pon la bandera en cero    
-            MainWinClass.ROI = 0
+            MainWinClass.ROI = 0                                               #Como se quitó la ROI roja, hay que hacer esto cero
 
         else:
             self.statusbar.showMessage("There is no ROI in the image",1000)    #Si no hay una ROI, avisa que no hay nada que quitar desde la barra de status
                                                                           
+    
+    #Función que será llamada para continuar con la segmentación a partir de 
+    #datos previamente guardados
+    def ContinueSegm(self):
+        print("Continuar segmentación")
+
+
+    #Función que va a permitir cerrar adecuadamente las ventanas abiertas
+    def closeEvent(self, event):                                               #Es para quitar todo en la imagen cuando se cierre la tabla de contornos https://www.qtcentre.org/threads/20895-PyQt4-Want-to-connect-a-window-s-close-button
+        event.ignore()                                                         #Detenemos el evento para cerrar primero las ventanas hijas
+        MainWinClass.close = 1                                                 #Ponemos la bandera en 1 para indicar que el programa principal se va a cerrar
+        """La siguiente línea puede generar problemas si nunca se abrió la 
+        tabla, tal vez hay que indicar desde antes que no hay/nunca existió
+        una tabla/otra ventana de diálogo"""
+        tableVis = self.TableWin.isVisible()                                   #Con esto sabemos si la tabla es visible o no, para cerrarla adecuadamente        
+        if tableVis:                                                           #Si la tabla es visible, hay que invocar su función de cerrado
+            self.TableWin.close()                                              
+            tableFlag = ContourTableWinClass.cancel                            #Para saber si se presionó cancelar en la tabla
+            if tableFlag == 0:                                                 #Si NO se presionó el botón de cancelar en la tabla, HAY que cerrar la ventana principal
+                event.accept()
+
+        else:                                                                  #Si no hay alguna ventana abierta, cierra la ventana principal
+            event.accept()
+        """Aquí invocamos el cierre del resto de ventanas hijas"""
+
+#        event.accept()                                                         #Cerramos la ventana principal
+        
+
+    
 
 
 #Se crea la tabla de contornos presentes en la imagen 
 class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #Ventana con la tabla de contornos
     def __init__(self, ContoursDict, TimeSerDict, imv1, alto, ancho, CellRad,\
-                 bandera, data, NoFrames, row, parent = MainWinClass):
+                 bandera, data, NoFrames, row, cancel, parent ):               # bandera, data, NoFrames, row, parent = MainWinClass):
                                                         
         super(ContourTableWinClass, self).__init__()
         self.setupUi(self)
@@ -264,8 +306,10 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         #la tabla
         ContourTableWinClass.bandera = bandera                                 #Para poder cambiar esta variable por fuera de la clase https://stackoverflow.com/questions/44046920/changing-class-attributes-by-reference
         ContourTableWinClass.row = row                                         #Para saber qué renglón es el que se ha seleccionado para graficar 
+        ContourTableWinClass.cancel = cancel                                   #Para indicar que al tratar de cerrar la tabla se presionó el botón de cancelar
                 
         #Se hacen "self" diferentes variables aceptadas en la clase
+        self.parent = parent
         self.ContoursDict = ContoursDict
         self.TimeSerDict = TimeSerDict  
         self.imv1 = imv1
@@ -357,15 +401,15 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
             MainWinClass.statusbar.showMessage("ROI not selected", 1000)       #Para indicar en la barra de status que no hay una ROI que se pueda agregar a la tabla
         
         else:                                                     
-            key = self.ContoursTable.item(row,0).text()                            #Texto que aparece en la primer columna de la tabla   
-            key = int(key)                                                         #Hay que cambiarlo a integer porque era string, este es el key del diccionario                                                                                         
+            key = self.ContoursTable.item(row,0).text()                        #Texto que aparece en la primer columna de la tabla   
+            key = int(key)                                                     #Hay que cambiarlo a integer porque era string, este es el key del diccionario                                                                                         
 
             #Se quita el renglón de la tabla
-            self.ContoursTable.removeRow(row)                                      #Se quita el renglón de la tabla
+            self.ContoursTable.removeRow(row)                                  #Se quita el renglón de la tabla
     
             #Hay que quitar el contorno y la serie de tiempo de los 
             #diccionarios correspondientes
-            del self.ContoursDict[key]                                             #Hay que quitar la ROI del diccionario de ROIs
+            del self.ContoursDict[key]                                         #Hay que quitar la ROI del diccionario de ROIs
             del self.TimeSerDict[key]                      
     
             #Hay que llamar a la función de LabelContour para revisar las 
@@ -432,7 +476,7 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
     #de contornos, al diccionario de series de tiempo, a la tabla                
     def AddROI(self, imv1, alto, ancho):
         
-        flag = ContourTableWinClass.bandera                                    #Para saber qué valor tiene la variable bandera 
+        flag = ContourTableWinClass.bandera                                    #Para saber si sí hay una ROI roja encima del video
         if flag ==0:                                                           #0= No hay ROI en la imagen
             MainWinClass.statusbar.showMessage("There is no ROI in the image",\
                                        1000)                                   #Para indicar en la barra de status que no hay una ROI que se pueda agregar a la tabla
@@ -476,9 +520,10 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
 
             
     def Save(self):
-        filename = QtGui.QFileDialog.getSaveFileName(self, 'Save File', \
+        
+        self.filename = QtGui.QFileDialog.getSaveFileName(self, 'Save File', \
                                                      os.getenv('HOME'))        #Obtiene la ruta del SO
-        lista0 = str(filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
+        lista0 = str(self.filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
         lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)        
         #lista1 tiene la ruta incompleta de dónde guardar el archivo
         #https://pythonprogramming.net/file-saving-pyqt-tutorial/         
@@ -521,10 +566,51 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         np.savetxt(namePos, pos2, delimiter=",", fmt="%u", header='ROI, X, Y',\
                    comments='')                                                #%.3f es para guardar los datos como float con 3 decimales después del punto        
             
+
+    def closeEvent(self, event):                                               #Es para quitar todo en la imagen cuando se cierre la tabla de contornos https://www.qtcentre.org/threads/20895-PyQt4-Want-to-connect-a-window-s-close-button
+
+        event.ignore()                                                         #Evitamos que la tabla se cierre enseguida
+
+        result = QtGui.QMessageBox.question(self, 'Confirm', 
+                        'Do you want to save the data before close the table?',
+                        QtGui.QMessageBox.Save | QtGui.QMessageBox.Discard |\
+                        QtGui.QMessageBox.Cancel)                              #Ventana de mensaje que pregunta si el usuario desea guardar los datos, descartarlos o cancelar el cerrar la tabla 
+                                                                               #https://pythonprogramming.net/pop-up-messages-pyqt-tutorial/
+        flag = ContourTableWinClass.bandera                                    #Para saber si hay una ROI roja en la imagen
+
+        if result == QtGui.QMessageBox.Save:                                   #Si se presionó el botón de guardar
+            ContourTableWinClass.cancel = 0                                    #Indicamos que SÍ se desea cerrar la ventana de la tabla, sirve cuando la ventana principal se va a cerrar
+            self.Save()                                                        #Si se van a guardar los datos, abrir la ventana de guardar datos
+            if self.filename[0] != str(''):                                    #Si sí se guardaron los datos
+                self.imv1.removeItem(self.scatterItem)                         #Quitar el video de las ventanas y las etiquetas
+                self.imv1.clear()         
+                if flag == 1:                                                  #Si sí hay una ROI roja encima de la imagen
+                    redROI = MainWinClass.ROI                                  #Hay que quitarla
+                    self.imv1.removeItem(redROI)
+                event.accept()                                                 #Después hay que cerrar la tabla, si no se guardaron los datos hay que dejar la tabla como estaba
+
+        elif result == QtGui.QMessageBox.Discard:                              #Si se presionó el botón de descartar
+            ContourTableWinClass.cancel = 0                                    #Indicamos que SÍ se desea cerrar la ventana de la tabla, sirve cuando la ventana principal se va a cerrar
+            self.imv1.removeItem(self.scatterItem)                             #Quitar el video de las ventanas y las etiquetas
+            self.imv1.clear()        
+            if flag == 1:                                                      #Si sí hay una ROI roja encima de la imagen
+                redROI = MainWinClass.ROI                                      #Hay que quitarla
+                self.imv1.removeItem(redROI)
+            event.accept()                                                     #Después hay que cerrar la tabla
         
-                   
+        elif result == QtGui.QMessageBox.Cancel:                               #Si se presionó el botón de cancelar
+            flag = MainWinClass.close                                          #La bandera se activa si la ventana principal se va a cerrar            
+            if flag:                                                           #Si la ventana principal se desea cerrar, pero se presionó cancelar en la tabla, hay que evitar el cierre de todo
+                ContourTableWinClass.cancel = 1                                #Indicamos que no se desea cerrar la ventana de la tabla, ya que se presionó cancelar
+
+                
+#                event.accept() 
+#            mainWinVis = self.parent.isVisible()        
+        
+        
+        
 app = QtGui.QApplication(sys.argv)
-MyWindow = MainWinClass(None)
+MyWindow = MainWinClass(0,None)
 MyWindow.show()
 app.exec_()
 
