@@ -6,29 +6,24 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>250</width>
-    <height>81</height>
+    <width>400</width>
+    <height>300</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Error</string>
+   <string>Dialog</string>
   </property>
-  <widget class="QLabel" name="label">
+  <widget class="QPushButton" name="pushButtonD">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>20</y>
-     <width>331</width>
-     <height>41</height>
+     <x>130</x>
+     <y>190</y>
+     <width>93</width>
+     <height>28</height>
     </rect>
    </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
    <property name="text">
-    <string>The file must be a .tif file</string>
+    <string>Usuario Aceptó</string>
    </property>
   </widget>
  </widget>

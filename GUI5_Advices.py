@@ -5,13 +5,16 @@ Created on Tue Jul 30 14:35:54 2019
 @author: akire
 """
 
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+from pyqtgraph.Qt import QtGui, QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5 import QtCore
 #from GUI5_Principal import MainWinClass
 
 ErrorDialogWin1 = uic.loadUiType("GUI5_ErrorWin1.ui")[0] 
 ErrorDialogWin2 = uic.loadUiType("GUI5_ErrorWin2.ui")[0] 
-PlotDialogWin = uic.loadUiType("GUI5_FirstDialog.ui")[0]                       #Ventana de serie tiempo completa
+ErrorDialogWin3 = uic.loadUiType("GUI5_ErrorWin3.ui")[0] 
+PlotDialogWin = uic.loadUiType("GUI5_FirstDialog2.ui")[0]                       #Ventana de serie tiempo completa
 AdviseDialogWin1 = uic.loadUiType("GUI5_SecondDialog.ui")[0]                   #Ventana de error, advertencia
 
 
@@ -25,7 +28,7 @@ class FileTypeAdviceWinClass1(QtGui.QMainWindow, ErrorDialogWin1):
         self.setWindowModality(QtCore.Qt.ApplicationModal)
         
         
-        
+         
 #Mensaje de error que sale si el archivo NO tiene más de 300 frames o si está 
 #abriendo una imagen y no video 
 class FileTypeAdviceWinClass2(QtGui.QMainWindow, ErrorDialogWin2):             
@@ -35,55 +38,137 @@ class FileTypeAdviceWinClass2(QtGui.QMainWindow, ErrorDialogWin2):
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
         self.setWindowModality(QtCore.Qt.ApplicationModal)     
         
+
+
+#Mensaje de error que sale si el archivo no es tipo csv       
+class FileTypeAdviceWinClass3(QtGui.QMainWindow, ErrorDialogWin3):             
+    def __init__(self, parent = None):
+        super(FileTypeAdviceWinClass3, self).__init__()
+        self.setupUi(self)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+        
         
         
 #Ventana que pide datos del video y deben proporcionarse forzosamente para el 
-#análisis posterior            
-class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
-    def __init__(self, NoFrames, parent=None):
-        super().__init__(parent)
-        self.setupUi(self)
+#análisis posterior        
+"""ESTA VENTANA ES LA QUE QUITA LA PARTE SUPERIOR DE LA VENTANA, FUNCIONA
+BIEN """
+#class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
+#    def __init__(self, NoFrames, parent=None):
+#        super().__init__(parent)
+#        self.setupUi(self)
+#        
+#        #Para que la nueva ventana no se pueda cerrar y esté siempre encima 
+#        #de la ventana principal:
+#        self.setWindowFlags(  
+#        QtCore.Qt.FramelessWindowHint |
+#        QtCore.Qt.WindowStaysOnTopHint )                                       #https://stackoverflow.com/questions/40866883/pyqt5-change-mainwindow-flags
+#                                                                               #https://stackoverflow.com/questions/34160160/creating-window-that-has-no-close-button-in-qt                                                                                     
+#                                                                                                                                                              
+#        #Para que la ventana de dialogo no deje que se pueda modificar la 
+#        #ventana principal:                                                                      
+#        self.setWindowModality(QtCore.Qt.ApplicationModal)                     #https://stackoverflow.com/questions/22410663/block-qmainwindow-while-child-widget-is-alive-pyqt                                                 
+#
+#        #Para obtener el número de frames que tiene el stack completo 
+#        #(que ya se había calculado en la ventana principal)
+#        self.NoFrames = NoFrames            
+#        self.FirstDialogButton.clicked.connect(self.CheckFramesInfo)           
+#
+#    #Se verifica primero que los datos dados por el usuario "tienen sentido" :
+#    #1.- Que el frame inicial sea menor al frame final
+#    #2.- Que al menos la porción de video contenga 300 frames
+#    #3.- Que no se rebase el número total de frames del stack cargado
+#    def CheckFramesInfo(self):
+#        self.frame1 = self.Fr1_spinBox.value()
+#        self.frame2 = self.Fr2_spinBox.value()   
+#        self.CellSize = self.Fr3_spinBox.value()
+#      
+#        if (self.frame2 <= self.frame1) or (self.frame2 - self.frame1 < 300) \
+#            or (self.frame2 - self.frame1 > self.NoFrames) :            
+#                
+#            #Ventana que avisa al usuario que eligió mal los frames inicial 
+#            #y final
+#            self.SecondDialogWin = FramesAdviceWinClass()
+#            self.SecondDialogWin.show()           
+#
+#        else:
+#            #Iterar sobre los radio buttons para saber cúal se eligió:
+#            self.indexOfChecked = [self.CellTypeGroup.buttons()[x].isChecked() \
+#                for x in range(len(self.CellTypeGroup.buttons()))].index(True)  
+#            super().accept()                                                   #Call parent method        
+
+
+
         
-        #Para que la nueva ventana no se pueda cerrar y esté siempre encima 
-        #de la ventana principal:
-        self.setWindowFlags(  
-        QtCore.Qt.FramelessWindowHint |
-        QtCore.Qt.WindowStaysOnTopHint )                                       #https://stackoverflow.com/questions/40866883/pyqt5-change-mainwindow-flags
-                                                                               #https://stackoverflow.com/questions/34160160/creating-window-that-has-no-close-button-in-qt                                                                                     
-                                                                                                                                                              
+"""ESTA PARTE ES PARA HACER FUNCIONAR LA VENTANA SIN TENER QUE QUITAR SU PARTE
+SUPERIOR"""        
+#class PlotDialogWinClass(QtWidgets.QDialog, PlotDialogWin):
+#Ventana de diálogo que pide ingresar datos para poder hacer la segmentación, 
+#si hay algo extraño en los datos salen ventanas de error
+
+class PlotDialogWinClass(QtGui.QMainWindow, PlotDialogWin):
+    
+    okClicked = QtCore.pyqtSignal()                                            #Esto es para emitir una señal cuando las condiciones sean adecuadas para hacer el análisis
+                                                                               #https://www.linuxquestions.org/questions/programming-9/pyqt-controlling-one-window-with-widgets-from-a-different-window-4175527226/
+    closeClicked = QtCore.pyqtSignal()                                         #Señal emitida cuando se quiere cerrar la ventana
+    
+    def __init__(self, NoFrames, parent=None):
+        super(PlotDialogWinClass, self).__init__()
+#        super().__init__(parent)
+        self.setupUi(self)  #(self)
+        
         #Para que la ventana de dialogo no deje que se pueda modificar la 
         #ventana principal:                                                                      
         self.setWindowModality(QtCore.Qt.ApplicationModal)                     #https://stackoverflow.com/questions/22410663/block-qmainwindow-while-child-widget-is-alive-pyqt                                                 
 
+        #Para que la nueva ventana esté siempre encima de la ventana principal
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )                   #Par aque la ventana siempre esté encima de la ventana principal
+        
         #Para obtener el número de frames que tiene el stack completo 
         #(que ya se había calculado en la ventana principal)
         self.NoFrames = NoFrames            
-        self.FirstDialogButton.clicked.connect(self.CheckFramesInfo)           
+        
+        self.FirstDialogButton.clicked.connect(self.CheckFramesInfo)           #Cuando se de clic en el botón aceptar, llamar a la función CheckFramesInfo
+        
+        self.Flag = 0                                                          #Bandera que indica si los datos son incorrectos, si se checan y están bien se cambiará la bandera a 1
 
     #Se verifica primero que los datos dados por el usuario "tienen sentido" :
     #1.- Que el frame inicial sea menor al frame final
     #2.- Que al menos la porción de video contenga 300 frames
     #3.- Que no se rebase el número total de frames del stack cargado
-    def CheckFramesInfo(self):
-        self.frame1 = self.Fr1_spinBox.value()
-        self.frame2 = self.Fr2_spinBox.value()   
-        self.CellSize = self.Fr3_spinBox.value()
+    def CheckFramesInfo(self):        
+        self.frame1 = self.Fr1_spinBox.value()                                 #Dato ingresado por el usuario para el frame inicial
+        self.frame2 = self.Fr2_spinBox.value()                                 #Dato ingresado por el usuario para el frame final
+        self.CellSize = self.Fr3_spinBox.value()                               #Dato ingresado por el usuario para el tamaño de la célula
       
-        if (self.frame2 <= self.frame1) or (self.frame2 - self.frame1 < 300) \
-            or (self.frame2 - self.frame1 > self.NoFrames) :            
+        if (self.frame2 <= self.frame1) or (self.frame2 - self.frame1 < 300)\
+            or (self.frame2 - self.frame1 > self.NoFrames) :                   
                 
             #Ventana que avisa al usuario que eligió mal los frames inicial 
             #y final
             self.SecondDialogWin = FramesAdviceWinClass()
-            self.SecondDialogWin.show()           
-
+            self.SecondDialogWin.show()  
+            
         else:
-            #Iterar sobre los radio buttons para saber cúal se eligió:
-            self.indexOfChecked = [self.CellTypeGroup.buttons()[x].isChecked() \
+            #Iterar sobre los radio buttons para saber si son neuronas o 
+            #de hipófisis
+            self.indexOfChecked = [self.CellTypeGroup.buttons()[x].isChecked()\
                 for x in range(len(self.CellTypeGroup.buttons()))].index(True)  
-            super().accept()                                                   #Call parent method
 
+            self.Flag = 1                                                      #Los datos son correctos, ponemos la bandera en 1
+            self.close()                                                       #Cerramos la ventana
+            self.okClicked.emit()                                              #Se emite la señal porque los datos ingresados por el usuario tienen sentido
 
+    #Función que indica qué hacer en caso de que se desee cerrar la ventana
+    def closeEvent(self, event):
+        if self.Flag == 0:                                                     #Si los datos no son adecuados y se va a cerrar la ventana 
+            self.closeClicked.emit()                                           #Emite una señal de que se va a cerrar la ventana y los datos son inadecuados
+            event.accept()                                                     #Cierra la ventana
+        elif self.Flag == 1:                                                   #Si los datos tienen sentido 
+            event.accept()                                                     #Cierra la ventana normalmente
+        
+        
 
 #Mensaje de error que avisa al usuario que eligió mal los frames inicial y 
 #final para el análisis
@@ -94,3 +179,4 @@ class FramesAdviceWinClass(QtGui.QMainWindow, AdviseDialogWin1):               #
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
         self.setWindowModality(QtCore.Qt.ApplicationModal)
         
+

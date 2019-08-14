@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>250</width>
-    <height>81</height>
+    <width>262</width>
+    <height>82</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,7 +28,7 @@
     </font>
    </property>
    <property name="text">
-    <string>The file must be a .tif file</string>
+    <string>The file must be a .csv file</string>
    </property>
   </widget>
  </widget>
