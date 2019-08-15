@@ -110,6 +110,11 @@
     <string>Save</string>
    </property>
   </action>
+  <action name="actionLoad_Stack">
+   <property name="text">
+    <string>Load Stack</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

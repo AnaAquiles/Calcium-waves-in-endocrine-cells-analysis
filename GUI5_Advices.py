@@ -14,7 +14,8 @@ from PyQt5 import QtCore
 ErrorDialogWin1 = uic.loadUiType("GUI5_ErrorWin1.ui")[0] 
 ErrorDialogWin2 = uic.loadUiType("GUI5_ErrorWin2.ui")[0] 
 ErrorDialogWin3 = uic.loadUiType("GUI5_ErrorWin3.ui")[0] 
-PlotDialogWin = uic.loadUiType("GUI5_FirstDialog2.ui")[0]                       #Ventana de serie tiempo completa
+ErrorDialogWin4 = uic.loadUiType("GUI5_ErrorWin4.ui")[0] 
+PlotDialogWin = uic.loadUiType("GUI5_FirstDialog2.ui")[0]                      #Ventana de serie tiempo completa
 AdviseDialogWin1 = uic.loadUiType("GUI5_SecondDialog.ui")[0]                   #Ventana de error, advertencia
 
 
@@ -48,6 +49,16 @@ class FileTypeAdviceWinClass3(QtGui.QMainWindow, ErrorDialogWin3):
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
         self.setWindowModality(QtCore.Qt.ApplicationModal)
         
+        
+
+#Mensaje de error que sale si el archivo no es tipo csv       
+class FileTypeAdviceWinClass4(QtGui.QMainWindow, ErrorDialogWin4):             
+    def __init__(self, parent = None):
+        super(FileTypeAdviceWinClass4, self).__init__()
+        self.setupUi(self)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+
         
         
 #Ventana que pide datos del video y deben proporcionarse forzosamente para el 
@@ -160,13 +171,13 @@ class PlotDialogWinClass(QtGui.QMainWindow, PlotDialogWin):
             self.close()                                                       #Cerramos la ventana
             self.okClicked.emit()                                              #Se emite la señal porque los datos ingresados por el usuario tienen sentido
 
-    #Función que indica qué hacer en caso de que se desee cerrar la ventana
-    def closeEvent(self, event):
-        if self.Flag == 0:                                                     #Si los datos no son adecuados y se va a cerrar la ventana 
-            self.closeClicked.emit()                                           #Emite una señal de que se va a cerrar la ventana y los datos son inadecuados
-            event.accept()                                                     #Cierra la ventana
-        elif self.Flag == 1:                                                   #Si los datos tienen sentido 
-            event.accept()                                                     #Cierra la ventana normalmente
+#    #Función que indica qué hacer en caso de que se desee cerrar la ventana
+#    def closeEvent(self, event):
+#        if self.Flag == 0:                                                     #Si los datos no son adecuados y se va a cerrar la ventana 
+#            self.closeClicked.emit()                                           #Emite una señal de que se va a cerrar la ventana y los datos son inadecuados
+#            event.accept()                                                     #Cierra la ventana
+#        elif self.Flag == 1:                                                   #Si los datos tienen sentido 
+#            event.accept()                                                     #Cierra la ventana normalmente
         
         
 

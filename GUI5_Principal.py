@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import QMenu
 import re
 import csv
 import GUI5_Advices as adv
+from os.path import isfile, join
 
 
 
@@ -36,24 +37,23 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
     def __init__(self, ROI, close, parent=None):
         super().__init__(parent)        
         self.setupUi(self)
+        self.openAction.triggered.connect(self.openStack)
         self.findRoiAction.triggered.connect(self.dataCheck1)                  #Cuando se elige el menú Segmentation -> Cell Segmentation hay que ir a la función dataCheck
         self.actionContinueSeg.triggered.connect(self.ContinueSegm)            #Cuando se elige el menú Segmentation -> Load Segmentation hay que ir a la función Continue Segm
         
-        
+#        self.stack = 0                                                         
         self.TableWin = 0                                                      #Primero es una bandera que indica que la tabla hasta ahora no existe, si entra a su función correspondiente entonces se convertirá en la variable asociada a la tabla
         
         
         MainWinClass.statusbar = self.statusbar                                #Para poder cambiar esta variable por fuera de la clase https://stackoverflow.com/questions/44046920/changing-class-attributes-by-reference
         MainWinClass.ROI = ROI                                                 #Bandera para saber si hay una ROI roja encima del video
         MainWinClass.close = close                                             #Bandera para indicar que se va a cerrar la ventana principal
+        MainWinClass.stack = 0                                                 #Bandera que indica si se ha cargado o no un stack en la ventana 
         
-
-
-    #Esta función va a revisar que el archivo a abrir sea un video, y va a 
-    #pedir los datos del mismo y revisar que tienen sentido, si pasa todos los 
-    #filtros procederá a realizar la segmentación
-    def dataCheck1(self):                                                      
+        
+    def openStack(self):
         self.imv1.clear()                                                      #Limpiar la imagen principal
+        MainWinClass.stack = 0                                                 #Bandera que indica si se ha cargado o no un stack en la ventana 
         
         #Se va a abrir el archivo que se desea analizar
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File',\
@@ -126,40 +126,61 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
                             (int(self.ancho), int(self.alto), mousePoint.x(), \
                              mousePoint.y()))        
         self.imv1.scene.sigMouseMoved.connect(mouseMoved)                      #Aquí llamamos a la función que da la posición del mouse en la imagen      
-                
+
         #Deshabilita el menú que sale con el clic derecho sobre la imagen y 
         #crea uno nuevo, para permitir que el usuario añada ROIs 
         #self.viewbox.setMenuEnabled(False)                                    #con esto se deshabilita el menú con el clic derecho de la imv1 https://stackoverflow.com/questions/44402399/how-to-disable-the-default-context-menu-of-pyqtgraph
         self.viewbox.menu = None                                               #Para quitar todo lo que no es Export... en el menú
         self.imv1.scene.contextMenu = None                                     #Para quitar el Export... en el menú   https://groups.google.com/forum/#!topic/pyqtgraph/h-dyr0l6yZU
-        self.viewbox.menu = self.NewMenu()                                     #Función que crea el nuevo menú al hacer clic derecho sobre el video https://groups.google.com/forum/#!topic/pyqtgraph/3jWiatJPilc
-                
-        #Obtiene la serie de tiempo del stack completo
-        self.SerieTiempo = np.zeros(self.NoFrames)
-        for frame in range(self.NoFrames):  
-            imagen_i = self.data[frame,:,:] 
-            self.SerieTiempo[frame] = np.mean(imagen_i) 
-                                        
-        #Ventana que pide datos del video y deben proporcionarse forzosamente 
-        #para el análisis posterior
-        self.PlotDialogWin = adv.PlotDialogWinClass(self.NoFrames)             #"Llamamos" a la clase de la ventana de datos
-        self.PlotDialogWin.okClicked.connect(self.cellSegm)                    #Señal emitida si los datos ingresados a la ventana de diálogo fueron aceptados
-        self.PlotDialogWin.closeClicked.connect(self.closePlotDialog)              #Señal emitida si la ventana de datos se cerró
-        ItemGrafica = pg.PlotCurveItem(pen=(0,255,0))                          #Se hace un ítem de una gráfica  
-        ItemGrafica.setData(self.SerieTiempo)                                  #Se agregan los datos de la serie de tiempo al ítem} 
-        self.PlotDialogWin.TimeSeriesPlot.addItem(ItemGrafica)                 #Se agrega el ítem a la ventana de datos                
-        self.PlotDialogWin.show()                                              #Se muestra la ventana de datos
+        
+        MainWinClass.stack = 1                                                         #Indicamos que el stack se está desplegando en la ventana
+        
+
+    #Esta función va a revisar que el archivo a abrir sea un video, y va a 
+    #pedir los datos del mismo y revisar que tienen sentido, si pasa todos los 
+    #filtros procederá a realizar la segmentación
+    def dataCheck1(self):      
+                                                       
+        if MainWinClass.stack == 1:                                                    #bandera que indica que SÍ se está desplegndo un video en la ventana
+#            self.viewbox.menu = self.NewMenu()                                #Función que crea el nuevo menú al hacer clic derecho sobre el video https://groups.google.com/forum/#!topic/pyqtgraph/3jWiatJPilc
+                    
+            #Se obtiene la serie de tiempo del stack completo, se va graficar 
+            #en la ventana de diálogo 
+            self.SerieTiempo = np.zeros(self.NoFrames)
+            for frame in range(self.NoFrames):  
+                imagen_i = self.data[frame,:,:] 
+                self.SerieTiempo[frame] = np.mean(imagen_i) 
+                                            
+            #Ventana que pide datos del video y deben proporcionarse forzosamente 
+            #para el análisis posterior
+            self.PlotDialogWin = adv.PlotDialogWinClass(self.NoFrames)             #"Llamamos" a la clase de la ventana de datos
+            self.PlotDialogWin.okClicked.connect(self.cellSegm)                    #Señal emitida si los datos ingresados a la ventana de diálogo fueron aceptados
+#            self.PlotDialogWin.closeClicked.connect(self.closePlotDialog)              #Señal emitida si la ventana de datos se cerró
+            ItemGrafica = pg.PlotCurveItem(pen=(0,255,0))                          #Se hace un ítem de una gráfica  
+            ItemGrafica.setData(self.SerieTiempo)                                  #Se agregan los datos de la serie de tiempo al ítem} 
+            self.PlotDialogWin.TimeSeriesPlot.addItem(ItemGrafica)                 #Se agrega el ítem a la ventana de datos                
+            self.PlotDialogWin.show()                                              #Se muestra la ventana de datos
+        
+        elif MainWinClass.stack == 0:                                          #Si no se está desplegando un video en la ventana
+            self.statusbar.showMessage("There is no stack in the window",1000)
+            return
         
         
-    #Función llamada si la ventana de datos se cerró y los datos proporcionados 
-    #no fueron adecuados
-    def closePlotDialog(self):
-        self.imv1.clear()                                                      #Se quita el video de la imagen
+        
+    """CREO QUE ESTO SE PUEDE QUITAR"""    
+#    #Función llamada si la ventana de datos se cerró y los datos proporcionados 
+#    #no fueron adecuados
+#    def closePlotDialog(self):
+#        self.imv1.clear()                                                      #Se quita el video de la imagen
+#        MainWinClass.stack = 0                                                 #Se indica que el video se quitó de la ventana
 
 
     #Función llamada si los datos se proporcionaron de manera adecuada 
     #es decir se llevará a cabo la segmentación y se llama a la clase tabla
     def cellSegm(self):
+        
+        self.viewbox.menu = self.NewMenu()                                     #Función que crea el nuevo menú al hacer clic derecho sobre el video https://groups.google.com/forum/#!topic/pyqtgraph/3jWiatJPilc
+        
         inFrame = self.PlotDialogWin.frame1                                    #Frame inicial para el análisis
         finFrame = self.PlotDialogWin.frame2                                   #Frame final para el análisis
         self.CellDiam = self.PlotDialogWin.CellSize                            #Diámetro de la célula
@@ -174,6 +195,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             #contornos 
             self.ROI_dict = PituitarySegm(inFrame, finFrame, self.CellDiam, \
                                           SerieTiempoParc, self.data)          #Llama a la func que hace la segmentación 
+
 
             #Crear el diccionario de series de tiempo (se va a usar para 
             #graficar en la ventana de tabla)
@@ -275,46 +297,118 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
     #Función que será llamada para continuar con la segmentación a partir de 
     #datos previamente guardados en archivos
     def ContinueSegm(self):
-        #Formato de los archivos: Video_ID_Data.csv, Video_ID_ROI.csv, Video_ID_Info.csv
-        #Ventana o algo para cargar todos los archivos:
-        #Que se abra el archivo de DATA, y con ese se jalen los demás 
-        #Video, Data (series de tiempo), ROI (centros), Info (tipo de célula..)
-        #Cómo distinguir cada uno de ellos y cómo verificar que son adecuados
-        #es decir que no son imágenes o algo así
 
-        self.imv1.clear()                                                      #Limpiar la imagen principal
-        
-        #Se va a abrir el archivo que se desea analizar
-        filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File',\
-                                                     os.getenv('HOME'))        #Obtiene la ruta del SO
-        lista0 = str(filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
-        file_extention = lista0[-3:]                                           #últimos tres carcateres del string anterior        
+        if MainWinClass.stack == 1:                                            #Si el stack ya está desplegado en la ventana
+            #Se va a abrir el archivo que se desea analizar, se debe abrir el 
+            #archivo Nombre_RawData.csv 
+            filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File',\
+                                                         os.getenv('HOME'))    #Obtiene la ruta del SO
+            lista0 = str(filename[0])                                          #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
+            file_extention = lista0[-12:]                                      #últimos 12 caracteres del string anterior        
+    
+            #Si el archivo NO es tipo Name_RawData.csv manda un mensaje de 
+            #error y se sale de la función 
+            if file_extention != str('_RawData.csv'):
+                self.FileTypeErrorAdviceWin3 = adv.FileTypeAdviceWinClass3() 
+                self.FileTypeErrorAdviceWin3.show()  
+                return                                                         #Salir de la función
+    
+            #Vamos a obtener el nombre completo del archivo con su extensión
+            contador = 0
+            for character in reversed(lista0):                                 #Se repasa cada caracter dentro del path de atrás hacia adelante 
+                if character != str("/"):                                      #Si aún no es un caracter de / sigue contando
+                    contador += 1                    
+                else:
+                    break                                                      #Si ya encontraste un signo de / detén el contador y salte del for
+                
+            dataFile =lista0[-contador:]                                       #Nombre del archivo con todo y extensión 
+            path = lista0[0:len(lista0)-(contador+1)]                          #Path del archivo, donde se van a buscar los demás archivos
+            parcName = dataFile[0:len(dataFile)-12]                            #Porque len(_RawData.csv) = 12
+            roiFile = parcName + str("_ROI.csv")                               #Este debe ser el nombre del archivo con la información de las ROIs
+            infoFile = parcName + str("_Info.csv")                             #Este debe ser el nombre del archivo con la  información del análisis
+            
+            #Lista de los archivos en el directorio del path
+            lista1  = path.replace('/', '\\\\')                                #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)  
+            onlyfiles = [f for f in os.listdir(lista1) if isfile(join(path,f))]#Solo los archivos en el directorio
+                        
+            lista2 = [dataFile, roiFile, infoFile]                             #Lista de los archivos requeridos para continuar                        
+            resultado = all(x in onlyfiles for x in lista2)                    #Revisar si todos los archivos requeridos están en el directorio
+                      
+            if resultado == False:                                             #Los archivos requeridos NO están en el directorio
+                self.FileTypeErrorAdviceWin4 = adv.FileTypeAdviceWinClass4() 
+                self.FileTypeErrorAdviceWin4.show()  
+                return                                                         #Salir de la función                
 
-        #Si el archivo NO es tipo csv manda un mensaje de error y se sale 
-        #de la función
-        if file_extention != str('csv'):
-            self.FileTypeErrorAdviceWin3 = adv.FileTypeAdviceWinClass3() 
-            self.FileTypeErrorAdviceWin3.show()  
-            return                                                             #Salir de la función
+            #Hay que leer la información de los archivos, y guardarla en arrays
+            rawDataArr = np.loadtxt(lista1+'\\'+'\\'+str(dataFile), \
+                                    delimiter=",", comments='#', skiprows=1)   #Su primer columna es del número de frame, entonces no hay que tomarlo en cuenta
+            roiPosArr = np.loadtxt(lista1+'\\'+'\\'+str(roiFile),\
+                                   delimiter=",", comments='#', skiprows=1)
 
-        
-        
-        #Verificar que el video que se está cargando es el correcto, de forma
-        #similar a cuando se cargaba un video para el análisis
-        #Convertir la información de los archivos a los diccionarios 
-        #self.ROI_dict, self.TimeSerDict
-        #Mostrar la imagen self.imv1 y obtener del video self.alto,self.ancho
-        #self.NoFrames, self.data
-        #bandera_ROI=0, row=False, cancel=0, parent=self
-        #del archivo Info obtener self.CellDiam, cellType, inFrame, finFrame 
-        #Al final, llamar a la clase ContourTableWinClass con toda la información
-        #anterior
-        #¿Qué va a pasar si no se genera la tabla y después se desea cerrar la 
-        #ventana principal? creo que va a salir un error
-        
-        print("Continuar segmentación")
-        
+            #Para obtener la información que está dada en strings no en datos
+            #en una lista de listas
+            infoFile = lista1+'\\'+'\\'+str(infoFile)
+            with open(infoFile, 'r') as f:
+              reader = csv.reader(f)
+              dataInfoList = list(reader)
 
+            #separamos cada lista de la lista anterior
+            cellTypeInfo = dataInfoList[0]
+            initFrame = dataInfoList[1]
+            finalFrame = dataInfoList[2]
+            cellDiam = dataInfoList[3]
+            
+            #Obtenemos la información de cada lista y la guardamos en la
+            #variable final
+            self.CellDiam = int(cellDiam[1])
+            inFrame = int(initFrame[1])
+            finFrame = int(finalFrame[1])
+            
+            if cellTypeInfo[1] == 'Pituitary':
+                cellType = 1
+
+            elif cellTypeInfo[1] == 'Neurons':
+                 cellType = 0
+
+            else:
+                self.statusbar.showMessage("There is an error with \
+                                           the info File ",1000)               #Si la información del tipo de célula no es de neurona o pituitaria, la info es incorrecta
+                return 
+
+            #Crear los diccionarios a partir de los arreglos anteriores
+            Keys = roiPosArr[:,0]                                              #Array de llaves de los contornos
+            Keys = Keys.astype(int)
+            print(Keys)
+            self.TimeSerDict = {}
+            self.ROI_dict = {}
+            
+            contador=1                                                         #Cuenta el número de células a partir del archivo
+            for key in Keys:
+                self.TimeSerDict[key] = rawDataArr[:,contador]                 #Creación diccionario de series de tiempo
+                self.ROI_dict[key]=[roiPosArr[contador-1,1],\
+                              roiPosArr[contador-1,2]]                         #Creación diccionario de posiciones
+                contador += 1
+
+
+            #Se crea la tabla de contornos       
+            self.viewbox.menu = self.NewMenu()                                 #Función que crea el nuevo menú al hacer clic derecho sobre el video https://groups.google.com/forum/#!topic/pyqtgraph/3jWiatJPilc
+            
+            bandera_ROI = 0                                                    #Bandera para indicar que no hay una ROI circular en la imagen             
+            self.TableWin = ContourTableWinClass(self.ROI_dict,\
+                                self.TimeSerDict,self.imv1, self.alto, \
+                                self.ancho, self.CellDiam, bandera_ROI, \
+                                self.data, self.NoFrames, cellType, inFrame, \
+                                finFrame, row=False, cancel=0, parent=self) 
+                                                                                              
+            self.TableWin.show()                                               #Se muestra la tabla de contornos
+            self.TableWin.ContourCheckBox.setChecked(True)                     #Marcando la checkbox de los contornos para indicar que se están mostrando
+            
+        
+        elif MainWinClass.stack == 0:                                          #Si no se está desplegando un video en la ventana
+            self.statusbar.showMessage("There is no open stack in the \
+                                       window",1000)
+            return
+            
 
     #Función que va a permitir cerrar adecuadamente las ventanas abiertas
     def closeEvent(self, event):                                               #Es para quitar todo en la imagen cuando se cierre la tabla de contornos https://www.qtcentre.org/threads/20895-PyQt4-Want-to-connect-a-window-s-close-button
@@ -345,6 +439,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         
 
     
+ 
 
 
 #Se crea la tabla de contornos presentes en la imagen 
@@ -576,19 +671,18 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
             #Por ahora se quedará así, parece que es mejor ir arrastrando 
             #la misma ROI en lugar de dar clic cada vez 
 
-            
-    def Save(self):
-        
+    #Función que guarda la información en archivos csv         
+    def Save(self):        
         self.filename = QtGui.QFileDialog.getSaveFileName(self, 'Save File', \
                                                      os.getenv('HOME'))        #Obtiene la ruta del SO
-        lista0 = str(self.filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
+        lista0 = str(self.filename[0])                                         #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
         lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)        
         #lista1 tiene la ruta incompleta de dónde guardar el archivo
         #https://pythonprogramming.net/file-saving-pyqt-tutorial/         
         
         #Rutas completas de donde se guardarán los archivos
         namePos = str(lista1) + str('_ROI.csv')
-        nameData = str(lista1) + str('_Data.csv')
+        nameData = str(lista1) + str('_RawData.csv')
         nameInfo = str(lista1) + str('_Info.csv')
         
         #Para guardar las series de tiempo (Data)
@@ -626,12 +720,12 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
                    comments='')                                                #%.3f es para guardar los datos como float con 3 decimales después del punto        
             
         #Guardar el archivo de Info
-        if self.cellType == 0:                                                 #El tipo celular cambia con la bandera self.cellType
+        if self.cellType == 1:                                                 #El tipo celular cambia con la bandera self.cellType
             Info = [['Cell type','Pituitary'],['Initial frame', self.inFrame],\
                     ['Final frame', self.finFrame],\
                     ['Cell radius', self.CellDiam]]
             
-        elif self.cellType == 1:    
+        elif self.cellType == 0:    
             Info = [['Cell type','Neurons'],['Initial frame', self.inFrame],\
                     ['Final frame', self.finFrame],\
                     ['Cell radius', self.CellDiam]]     
@@ -639,6 +733,7 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
         with open(nameInfo, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerows(Info)            
+
 
  
     
@@ -657,7 +752,9 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
             self.Save()                                                        #Si se van a guardar los datos, abrir la ventana de guardar datos
             if self.filename[0] != str(''):                                    #Si sí se guardaron los datos
                 self.imv1.removeItem(self.scatterItem)                         #Quitar el video de las ventanas y las etiquetas
-                self.imv1.clear()         
+                self.imv1.clear()  
+                MainWinClass.stack = 0                                         #Indicar que se quitó el stack de la ventana
+         
                 if flag == 1:                                                  #Si sí hay una ROI roja encima de la imagen
                     redROI = MainWinClass.ROI                                  #Hay que quitarla
                     self.imv1.removeItem(redROI)
@@ -667,6 +764,9 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
             ContourTableWinClass.cancel = 0                                    #Indicamos que SÍ se desea cerrar la ventana de la tabla, sirve cuando la ventana principal se va a cerrar
             self.imv1.removeItem(self.scatterItem)                             #Quitar el video de las ventanas y las etiquetas
             self.imv1.clear()        
+            MainWinClass.stack = 0                                             #Indicamos que se quitó el stack de la ventana
+            
+            
             if flag == 1:                                                      #Si sí hay una ROI roja encima de la imagen
                 redROI = MainWinClass.ROI                                      #Hay que quitarla
                 self.imv1.removeItem(redROI)
