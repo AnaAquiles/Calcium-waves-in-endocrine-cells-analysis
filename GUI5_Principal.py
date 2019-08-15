@@ -3,10 +3,7 @@
 Created on Mon Jan 14 13:49:57 2019
 
 @author: akire
-LA VERSIÓN QUE NO SE EJECUTA, NO SÉ QUÉ LE HICE
-YO QUERÍA CORREGIR LA PARTE DE LA VENTANA CON LA 
-GRÁFICA, ESPECÍFICAMENTE LA PARTE DEL CIERRE ADECUADO 
-DE LA MISMA pero ya se revolvió todo
+Ya se añadió la parte de cargar datos para continuar con la segmentación
 """
 
 
