@@ -81,9 +81,13 @@ def PituitarySegm(frame0, frame1, CellDiam, SerieProm, data):
     #buscar la forma de normalizarla en el dominio!!!
 
     #Información de los datos
-    (NoFrames, alto, ancho) = data.shape
+    (NoFrames, alto, ancho) = data.shape                                       #Para saber cómo son los datos del video
     DiameterDict = {3:1, 5:2, 7:2.5, 9:3, 11:4, 13:4.5}                        #Variación sigma con el diámetro (impar)
-    Sigma = DiameterDict[CellDiam]                                              #Sigma para el blob
+    Sigma = DiameterDict[CellDiam]                                             #Sigma para el blob
+
+    
+
+    
 
     #Detección de spots    
     DesVest = np.std(data, 0)                                                  #Imagen de la desviación estándar    

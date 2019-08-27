@@ -130,7 +130,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         self.viewbox.menu = None                                               #Para quitar todo lo que no es Export... en el menú
         self.imv1.scene.contextMenu = None                                     #Para quitar el Export... en el menú   https://groups.google.com/forum/#!topic/pyqtgraph/h-dyr0l6yZU
         
-        MainWinClass.stack = 1                                                         #Indicamos que el stack se está desplegando en la ventana
+        MainWinClass.stack = 1                                                 #Indicamos que el stack se está desplegando en la ventana
         
 
     #Esta función va a revisar que el archivo a abrir sea un video, y va a 
@@ -138,7 +138,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
     #filtros procederá a realizar la segmentación
     def dataCheck1(self):      
                                                        
-        if MainWinClass.stack == 1:                                                    #bandera que indica que SÍ se está desplegndo un video en la ventana
+        if MainWinClass.stack == 1:                                            #bandera que indica que SÍ se está desplegndo un video en la ventana
 #            self.viewbox.menu = self.NewMenu()                                #Función que crea el nuevo menú al hacer clic derecho sobre el video https://groups.google.com/forum/#!topic/pyqtgraph/3jWiatJPilc
                     
             #Se obtiene la serie de tiempo del stack completo, se va graficar 
@@ -150,13 +150,13 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
                                             
             #Ventana que pide datos del video y deben proporcionarse forzosamente 
             #para el análisis posterior
-            self.PlotDialogWin = adv.PlotDialogWinClass(self.NoFrames)             #"Llamamos" a la clase de la ventana de datos
-            self.PlotDialogWin.okClicked.connect(self.cellSegm)                    #Señal emitida si los datos ingresados a la ventana de diálogo fueron aceptados
-#            self.PlotDialogWin.closeClicked.connect(self.closePlotDialog)              #Señal emitida si la ventana de datos se cerró
-            ItemGrafica = pg.PlotCurveItem(pen=(0,255,0))                          #Se hace un ítem de una gráfica  
-            ItemGrafica.setData(self.SerieTiempo)                                  #Se agregan los datos de la serie de tiempo al ítem} 
-            self.PlotDialogWin.TimeSeriesPlot.addItem(ItemGrafica)                 #Se agrega el ítem a la ventana de datos                
-            self.PlotDialogWin.show()                                              #Se muestra la ventana de datos
+            self.PlotDialogWin = adv.PlotDialogWinClass(self.NoFrames)         #"Llamamos" a la clase de la ventana de datos
+            self.PlotDialogWin.okClicked.connect(self.cellSegm)                #Señal emitida si los datos ingresados a la ventana de diálogo fueron aceptados
+#            self.PlotDialogWin.closeClicked.connect(self.closePlotDialog)     #Señal emitida si la ventana de datos se cerró
+            ItemGrafica = pg.PlotCurveItem(pen=(0,255,0))                      #Se hace un ítem de una gráfica  
+            ItemGrafica.setData(self.SerieTiempo)                              #Se agregan los datos de la serie de tiempo al ítem} 
+            self.PlotDialogWin.TimeSeriesPlot.addItem(ItemGrafica)             #Se agrega el ítem a la ventana de datos                
+            self.PlotDialogWin.show()                                          #Se muestra la ventana de datos
         
         elif MainWinClass.stack == 0:                                          #Si no se está desplegando un video en la ventana
             self.statusbar.showMessage("There is no stack in the window",1000)
@@ -189,7 +189,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         #1 para hipófisis, 0 para neuronas
         if cellType == 1:                                                      
             #Se encuentran las células, se obtiene un diccionario con los 
-            #contornos 
+            #contornos (Número consecutivo:[x,y])
             self.ROI_dict = PituitarySegm(inFrame, finFrame, self.CellDiam, \
                                           SerieTiempoParc, self.data)          #Llama a la func que hace la segmentación 
 
@@ -667,6 +667,7 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
             #Quitar la ROI roja del video
             #Por ahora se quedará así, parece que es mejor ir arrastrando 
             #la misma ROI en lugar de dar clic cada vez 
+
 
     #Función que guarda la información en archivos csv         
     def Save(self):        
