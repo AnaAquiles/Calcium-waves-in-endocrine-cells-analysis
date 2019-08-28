@@ -35,10 +35,29 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         super().__init__(parent)        
         self.setupUi(self)
         self.openAction.triggered.connect(self.openStack)
-        self.findRoiAction.triggered.connect(self.dataCheck1)                  #Cuando se elige el menú Segmentation -> Cell Segmentation hay que ir a la función dataCheck
+        self.findRoiAction.triggered.connect(self.dataCheck1)                  #Cuando se elige el menú Segmentation -> Cell Segmentation hay que ir a la función dataCheck1
         self.actionContinueSeg.triggered.connect(self.ContinueSegm)            #Cuando se elige el menú Segmentation -> Load Segmentation hay que ir a la función Continue Segm
         
-#        self.stack = 0                                                         
+        
+        
+        """%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            Inicio Parte de ANA        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%""" 
+        self.actionData_Normalization.triggered.connect(self.dataChek2)       #Cuando se elige el menú Calcium Analysis -> Data Normalization, hay que ir a la función de dataCheck2
+
+
+        """%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+              Fin Parte de ANA        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%""" 
+        
+        
+        
+        
+        
         self.TableWin = 0                                                      #Primero es una bandera que indica que la tabla hasta ahora no existe, si entra a su función correspondiente entonces se convertirá en la variable asociada a la tabla
         
         
@@ -164,7 +183,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         
         
         
-    """CREO QUE ESTO SE PUEDE QUITAR"""    
+   #CREO QUE ESTO SE PUEDE QUITAR    
 #    #Función llamada si la ventana de datos se cerró y los datos proporcionados 
 #    #no fueron adecuados
 #    def closePlotDialog(self):
@@ -429,14 +448,90 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
                     event.accept()
 
         else:                                                                  #Si la tabla nunca se abrió, cierra la ventana principal
-            event.accept()
-        """Aquí invocamos el cierre del resto de ventanas hijas"""
+            event.accept()                                                     #Cerramos la ventana principal
+        #Aquí invocamos el cierre del resto de ventanas hijas
 
-#        event.accept()                                                         #Cerramos la ventana principal
+
+
+
+
+
+    """%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        Inicio Parte de ANA        
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%"""     
+    #Función que va a revisar primero si el archivo que se va a abrir es tipo 
+    #Nombre_RawData.csv , si no va a arrojar un error
+    def dataChek2(self):
+
+        filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File',\
+                                                     os.getenv('HOME'))        #Obtiene la ruta del SO
+        lista0 = str(filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar el primer valor
+        file_extention = lista0[-12:]                                          #últimos 12 caracteres del string anterior        
+
+        #Si el archivo NO es tipo _RawData.csv manda un mensaje de 
+        #error y se sale de la función 
+        if file_extention != str('_RawData.csv'):
+            self.FileTypeErrorAdviceWin3 = adv.FileTypeAdviceWinClass3() 
+            self.FileTypeErrorAdviceWin3.show()  
+            return                                                             #Salir de la función
+
+        #Buscar el archivo y guardarlo en una matriz
+        lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)  
+        #Hay que leer la información del archivo y guardarla en un array
+        self.rawDataArr = np.loadtxt(lista1, delimiter=",", comments='#',\
+                                skiprows=1)                                    #Su primer columna es del número de frame, entonces no hay que tomarlo en cuenta
+                
+        #Ahora hay que pedir el tiempo de muestreo
+        self.TimeSamplingWin = adv.SamplingTimeClass()
+        self.TimeSamplingWin.okClicked.connect(self.dataNormalization)
+        self.TimeSamplingWin.show()
         
+        
+    #Función que va a realizar la normalización de los datos brutos, pero solo 
+    #si el archivo es tipo Nombre_RawData.csv     
+    def dataNormalization(self):
+        
+        sampleTime = self.TimeSamplingWin.samplTime                            #Tiempo de muestreo que ingresó el usuario 
+        
+        
+        #Aquí iría la parte de normalización de los datos brutos
+        #Esto solo es para que veas cuáles son las variables que tienen el 
+        #arreglo de datos brutos y el tiempo de muestreo                                                       
+        print("Tiempo de muestreo: ")
+        print(sampleTime)
+        print("Forma del arreglo: ")
+        print(self.rawDataArr.shape)                                           #self.rawDataArr es el array que contiene a los datos brutos 
 
-    
+
+
+    """%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          Fin Parte de ANA        
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%"""     
+
+
+
+
+
  
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
 #Se crea la tabla de contornos presentes en la imagen 
@@ -780,6 +875,8 @@ class ContourTableWinClass(QtWidgets.QDialog, ContourTableWin):                #
 #            mainWinVis = self.parent.isVisible()        
         
 
+
+        
 
 
         

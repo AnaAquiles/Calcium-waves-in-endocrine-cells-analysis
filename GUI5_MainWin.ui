@@ -57,9 +57,17 @@
     <property name="title">
      <string>Network Analysis</string>
     </property>
+    <addaction name="actionCorrelation"/>
+   </widget>
+   <widget class="QMenu" name="menuCalcium_Analysis">
+    <property name="title">
+     <string>Calcium Analysis</string>
+    </property>
+    <addaction name="actionData_Normalization"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSegmentation"/>
+   <addaction name="menuCalcium_Analysis"/>
    <addaction name="menuNetwork_Analysis"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -113,6 +121,16 @@
   <action name="actionLoad_Stack">
    <property name="text">
     <string>Load Stack</string>
+   </property>
+  </action>
+  <action name="actionData_Normalization">
+   <property name="text">
+    <string>Data Normalization</string>
+   </property>
+  </action>
+  <action name="actionCorrelation">
+   <property name="text">
+    <string>Correlation</string>
    </property>
   </action>
  </widget>

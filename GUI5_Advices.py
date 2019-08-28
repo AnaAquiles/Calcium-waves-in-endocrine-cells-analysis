@@ -20,6 +20,26 @@ AdviseDialogWin1 = uic.loadUiType("GUI5_SecondDialog.ui")[0]                   #
 
 
 
+
+"""%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    Inicio Parte de ANA        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%""" 
+SamplingTimeWin = uic.loadUiType("GUI5_SamplingTime_Ana.ui")[0]                #Ventana que solicita el tiempo de muestreo
+ErrorDialogWin5 = uic.loadUiType("GUI5_ErrorWin5_Ana.ui")[0]                   #Ventana que avisa que no se indicó el tiempo de muestreo
+
+"""%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      Fin Parte de ANA        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%""" 
+
+
+
+
+
+
 #Mensaje de error que sale si el archivo no es tipo tiff       
 class FileTypeAdviceWinClass1(QtGui.QMainWindow, ErrorDialogWin1):             
     def __init__(self, parent = None):
@@ -191,3 +211,47 @@ class FramesAdviceWinClass(QtGui.QMainWindow, AdviseDialogWin1):               #
         self.setWindowModality(QtCore.Qt.ApplicationModal)
         
 
+
+
+
+"""%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    Inicio Parte de ANA        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%""" 
+#Ventana que solicita el tiempo de muestreo
+class SamplingTimeClass(QtWidgets.QDialog, SamplingTimeWin):                   #Ventana de advertencia de error sobre el número de frames que debe tener el stack
+    okClicked = QtCore.pyqtSignal()                                            #Señal emitida cuando se dio aceptar en la ventana
+
+    def __init__(self, parent = None):
+        super(SamplingTimeClass, self).__init__()
+        self.setupUi(self)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.buttonBox.accepted.connect(self.clickAccept)                      #Qué hacer si se da clic en aceptar 
+                
+    def clickAccept(self):
+        self.samplTime = self.st_spinBox.value()                               #Obtenemos el tiempo de muestreo que ingresó el usuario
+        self.okClicked.emit()                                                  #Se emite la señal indicando que se dio en aceptar en la ventana
+
+    def closeEvent(self, event):                                               #Si la ventana se va a cerrra
+        self.samplAdvice = SamplTimeAdviceWinClass()                           
+        self.samplAdvice.show()                                                #Mostrar la ventana que indica que faltó dar el tiempo de muestreo
+                                                               
+
+
+#Ventana de error que sale cuando no se indica el tiempo de muestreo
+class SamplTimeAdviceWinClass(QtGui.QMainWindow, ErrorDialogWin5):             #Ventana de advertencia de error sobre la falta de tiempo de muestreo
+    def __init__(self, parent = PlotDialogWinClass):
+        super(SamplTimeAdviceWinClass, self).__init__()
+        self.setupUi(self)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint )    
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+
+
+
+"""%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      Fin Parte de ANA        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%"""         
