@@ -232,6 +232,7 @@ class SamplingTimeClass(QtWidgets.QDialog, SamplingTimeWin):                   #
                 
     def clickAccept(self):
         self.samplTime = self.st_spinBox.value()                               #Obtenemos el tiempo de muestreo que ingresó el usuario
+        self.totFrame = self.totFr_spinBox.value()
         self.okClicked.emit()                                                  #Se emite la señal indicando que se dio en aceptar en la ventana
 
     def closeEvent(self, event):                                               #Si la ventana se va a cerrra

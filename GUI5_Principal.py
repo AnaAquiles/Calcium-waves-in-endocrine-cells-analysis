@@ -494,13 +494,15 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
     def dataNormalization(self):
         
         sampleTime = self.TimeSamplingWin.samplTime                            #Tiempo de muestreo que ingresó el usuario 
-        
+        totalFrames = self.TimeSamplingWin.totFrame                            #Número de frames totales ingresado por el usuario
         
         #Aquí iría la parte de normalización de los datos brutos
         #Esto solo es para que veas cuáles son las variables que tienen el 
         #arreglo de datos brutos y el tiempo de muestreo                                                       
         print("Tiempo de muestreo: ")
         print(sampleTime)
+        print("Frames totales")
+        print(totalFrames)
         print("Forma del arreglo: ")
         print(self.rawDataArr.shape)                                           #self.rawDataArr es el array que contiene a los datos brutos 
 
