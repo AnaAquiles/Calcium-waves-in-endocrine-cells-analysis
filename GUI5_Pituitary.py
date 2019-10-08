@@ -85,57 +85,63 @@ def PituitarySegm(frame0, frame1, CellDiam, SerieProm, data):
     DiameterDict = {3:1, 5:2, 7:2.5, 9:3, 11:4, 13:4.5}                        #Variación sigma con el diámetro (impar)
     Sigma = DiameterDict[CellDiam]                                             #Sigma para el blob
 
+    #Información necesaria para recorrer la imagen con ventanas cuadradas
+    widthwin = 3       
+    heightwin = 3
+    
+    ww = np.remainder(ancho, widthwin);
+    wh = np.remainder(alto, heightwin);
+
+    #Tamaño real de la imagen sobre el que se va a hacer el análisis
+    ancho1 = ancho - ww;
+    alto1 = alto - wh;
+    
+    #Máscara final (de la segmentación con ventanas)
+    mask = np.zeros((alto, ancho)) 
+
+    #Aquí se hace la segmentación con ventanas
+    for x in range(0, ancho1):   
+        for y in range(0, alto1):
+            serie = np.zeros(NoFrames);
+            for N in range(NoFrames):
+                serie[N] = np.average(data[N, y:y+heightwin, x:x+widthwin]);   #Para recorrer el stack por ventana, quitarlo si se quiere recorrer por pixel
+            
+            SerieTiempo = (serie-SerieProm)/SerieProm
+            resultado = Clasification(SerieTiempo)
+            if resultado >= 0:
+                mask[y:y+heightwin, x:x+widthwin] = 1
+                
     
 
-    
-
-    #Detección de spots    
+    #Detección de spots en la imagen de la desviación estándar    
     DesVest = np.std(data, 0)                                                  #Imagen de la desviación estándar    
     blobs_log = blob_log(DesVest, min_sigma=Sigma, max_sigma=Sigma, \
                          num_sigma=1, threshold=.1)                            #Detección de spots
     
-    blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)                                #Compute radii in the 3rd column.    
-
-    
-    #Para mostrar la imagen de la desvest con los círculos superpuestos usando matplotlib 
-    fig, axes = plt.subplots()
-#    axes.imshow(DesVest, cmap='seismic')
-#    axes.imshow(DesVest, cmap='Greys')
-    axes.imshow(data[0,:,:])
-    
+    blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)                                #Compute radii in the 3rd column.   
     
     pos = []
-    for blob in blobs_log:                                                     
-        y, x, r = blob
-        c = plt.Circle((x, y), r, color='yellow', linewidth=1, fill=False)
-        axes.add_patch(c)
-        
-        pos.append([x,y])
-        
-    keys = np.arange(len(blobs_log));     
-    ROI_dict = dict(zip(keys, pos));
+    #Posiciones de todos los spots encontrados
+    X = []     
+    Y = []
+    
+    #Posiciones de los spots clasificados como célula
+    X1 = []     
+    Y1 = []    
     
 
-
-    axes.set_axis_off()    
-    plt.tight_layout()
-    plt.show()
     
-    
-    #Imagen final de la máscara binaria!! con cv2 van a salir cruces y cosas raras!!
-    mask = np.zeros((alto, ancho))                                             #Máscara final de la que se obtendrán los contornos
-    mask2 = np.zeros((alto, ancho))
-    
-    
-    #Esto solo es para pruebas
-    blobs_log2 = blobs_log[0:3]
-    
-    #Generación de las series para cada spot    
-    LenSerie = int(frame1-frame0)                                              #Longitud de la serie de tiempo (va a depender de lo que el usuario haya determinado inicialmente)
-    
-    for blob in blobs_log:                                                    #Para cada spot encontrado
-#        binaria = np.zeros((alto, ancho), dtype=np.uint8)                      #Imagen binaria que contendrá la máscara del spot
+    #Se obtendrá la lista de coordenadas de los spots encontrados, y además se van a clasificar
+    LenSerie = int(frame1-frame0)  
+    for blob in blobs_log:               
+        #imagen en blanco y negro que servirá para encontrar las coordenadas de los spots 
+        mask2 =  np.zeros((alto, ancho))                  
+                    
         y, x, r = blob                                                         #Centro y radio del spot
+        pos.append([x,y])
+        X.append(x)
+        Y.append(y)
+
         rr,cc = circle(int(y), int(x), CellDiam/2, shape = (alto, ancho))          #Da las coordenadas que tendrá el círculo de acuerdo al centro y radio dado, usando skimage                                       
         mask2[rr, cc] = 255                                                    #Dadas las coordenadas anteriores, se rellenan de blanco
 
@@ -143,14 +149,9 @@ def PituitarySegm(frame0, frame1, CellDiam, SerieProm, data):
         rr = np.expand_dims(rr, axis=1)
         cc = np.expand_dims(cc, axis=1)
         coordenadas = np.concatenate((rr,cc), axis=1)
-        area = len(rr)
-        
+        area = len(rr)        
 
-##        cv2.circle(binaria,(int(x),int(y)), int(r), (255,255,255), -1)         #Creación de la máscara del spot
-#        area = cv2.countNonZero(binaria)                                       #Encontramos el número de pixeles diferentes de cero
-#        coordenadas = np.argwhere(binaria == 1)                              #Buscamos las coordenadas de los pixeles blancos en la imagen binaria
-#        print(coordenadas)
-        SerieTiempo = np.zeros(LenSerie)                                       #Contendrá la serie de tiempo
+        SerieTiempo2 = np.zeros(LenSerie)                                      #Contendrá la serie de tiempo
         j=0                                                                    #Contador para la serie de tiempo
         for frame in range(frame0,frame1,1):                                   #Para generar la serie de tiempo de una longitud determinada 
             imagen_i = data[frame,:,:]                                         #Recorremos cada frame
@@ -158,80 +159,188 @@ def PituitarySegm(frame0, frame1, CellDiam, SerieProm, data):
             for coordenada in coordenadas:                                     #Recorremos cada coordenada
                 suma = suma + imagen_i[coordenada[0],coordenada[1]]            #Suma de las intensidades
             promedio = suma/area                                               #Sacamos el promedio
-            SerieTiempo[j] = promedio                                          #El promedio se guarda en la serie        
+            SerieTiempo2[j] = promedio                                          #El promedio se guarda en la serie        
             j=j+1                                                              #Porque el frame0 puede ser diferente de cero
         
         #Normalización de la serie antes de su clasificación
-        SerieTiempo = (SerieTiempo-SerieProm)/SerieProm
+        SerieTiempo2 = (SerieTiempo2-SerieProm)/SerieProm
                 
-        resultado = Clasification(SerieTiempo)                                 #Función que hace la clasificación de la serie obtenida
+        resultado = Clasification(SerieTiempo2)                                 #Función que hace la clasificación de la serie obtenida
 
         if resultado>=0:                                                       #Si la clasificación indica que la región sí es célula
-            #Aquí hay que agregar ese spot a la imagen binaria mask, tal vez convenga 
-            #hacerlo usando plt para que se marquen círculos, y no cosas pixeleadas
-            #pero habrá que ver si se puede hacer
-            #También hay que obtener el contorno de la célula "solita" imagen binaria
-            #Y también hay que agregar dicho contorno al diccionario de contornos
-            #O hasta que se tenga la mask final, hacer las dos cosas, como abajo
-            mask[rr, cc] = 255 
+            X1.append(x)
+            Y1.append(y)           
             
-#        else:
-#            print(0)
+
+    keys = np.arange(len(blobs_log));     
+    ROI_dict = dict(zip(keys, pos));    #Para el diccionario que se necesita para que el programa funcione 
+
+    #Para mostrar el resultado de la clasificación 
     
+    
+    
+    
+    fig, ax = plt.subplots()
+    ax.imshow(mask)
+    ax.scatter(X, Y, s=15, c='blue', alpha=0.3) #Los azules son todos los spots encontrados
+    ax.scatter(X1,Y1, s=3, marker='^', c='red') #Los triángulos rojos son los spots asumidos como células
+    plt.show()
+    
+    
+    #Mostrar la máscara que se usa como círculo
     plt.figure(2)
-    plt.imshow(mask)
-    cv2.imwrite('Binaria_Clasificada.png', mask) 
-    cv2.imwrite('Binaria_Spots.png', mask2) 
-    
-    
-    
-#%% 
-#    #Esta parte es la que solo llama a la imagen binaria que ya se tiene
-#    #No hace ningún cálculo, es para la pueba de concepto
-#    print('Segmentación de Hipófisis, aquí hay que poner lo que está haciendo Ame')
+    plt.imshow(mask2)    
+
+
+    return (ROI_dict)  
+
+
+
+
+#
+#    #Detección de spots    
+#    DesVest = np.std(data, 0)                                                  #Imagen de la desviación estándar    
+#    blobs_log = blob_log(DesVest, min_sigma=Sigma, max_sigma=Sigma, \
+#                         num_sigma=1, threshold=.1)                            #Detección de spots
 #    
-#    binaria = cv2.imread("G:\\Mi unidad\\EAGV\\Proyectos\\Segmentacion y Analisis de Celulas con GUI\\Datos brutos\\Videos_Daniel\\1\\BINARIA2.png",0)                                 #Para que se abra en blanco y negro (1 solo canal)                                         #El stack de imágenes se pasa a un arreglo
-#    (alto, ancho)=binaria.shape 
+#    blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)                                #Compute radii in the 3rd column.    
 #
-#    # Detección de contornos de la imagen binaria
-#    copia_bin = binaria.astype(dtype='uint8')*255;
-#
-#    # Detección de contornos de la imagen binaria
-#    (imagen1,contours,hierarchy)=cv2.findContours(copia_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE);
-#
-#    #Máscara tendrá el arreglo de la imagen que se va a superponer al video, será en formato RGBA
-#    mascara = np.zeros((alto, ancho, 4));
-#    mascara1 = np.zeros((alto, ancho, 3));
-#    cv2.drawContours(mascara1,contours,-1,(255,255,0),1);     #-1 en lugar del 0
-#    mascara[:,:,0:3] = mascara1;
-#    mascara[:,:,3][mascara1[:,:,0]>200]=255;                               #Solo se pondrá en no transparente la parte de las ROIs
 #    
-#    mascara2 = np.transpose(mascara,(1,0,2))                          #El (1,0,2) indica cómo se va a trasponer la matriz 3D (ejes)
-#
+#    #Para mostrar la imagen de la desvest con los círculos superpuestos usando matplotlib 
+#    fig, axes = plt.subplots()
+##    axes.imshow(DesVest, cmap='seismic')
+##    axes.imshow(DesVest, cmap='Greys')
+#    axes.imshow(data[0,:,:])
+#    
+#    
+#    pos = []
+#    for blob in blobs_log:                                                     
+#        y, x, r = blob
+#        c = plt.Circle((x, y), r, color='yellow', linewidth=1, fill=False)
+#        axes.add_patch(c)
 #        
-#    #Se generará un diccionario con los contornos
-#    keys = np.arange(len(contours));                                  #Las llaves serán el número consecutivo de los contornos
-#    ROI_dict = dict(zip(keys, contours));                        #https://stackoverflow.com/questions/209840/convert-two-lists-into-a-dictionary-in-python        
-##
-##    button1.setChecked(True)                                          #Ponemos en true el botón de "Show ROIs"
-##
-###        print(len(self.ROI_dict))
-##
-##    #Hay que hacer la clasificación de las series de tiempo
-##    clasificacion = Series_Clasif()
-###        print(self.clasificacion)
-##    
-##    #Ahora hay que poner la tabla donde se muestre la clasificacion y que también deje ver las series de tiempo y permita quitarlas
-##
-##    self.TablaFinal()        
-##
-##    self.Fig_dict = {}                                                     #Diccionario que tendrá las ROIs remarcadas con los checkbox
-#%%
-    return (ROI_dict)   
-
-
-
-#def Clasification(serie, frame0, frame1, i):
-#    print(i)
+#        pos.append([x,y])
+#        
+#    keys = np.arange(len(blobs_log));     
+#    ROI_dict = dict(zip(keys, pos));
 #    
-    
+#
+#
+#    axes.set_axis_off()    
+#    plt.tight_layout()
+#    plt.show()
+#    
+#    
+#    #Imagen final de la máscara binaria!! con cv2 van a salir cruces y cosas raras!!
+#    mask = np.zeros((alto, ancho))                                             #Máscara final de la que se obtendrán los contornos
+#    mask2 = np.zeros((alto, ancho))
+#    
+#    
+#    #Esto solo es para pruebas
+#    blobs_log2 = blobs_log[0:3]
+#    
+#    #Generación de las series para cada spot    
+#    LenSerie = int(frame1-frame0)                                              #Longitud de la serie de tiempo (va a depender de lo que el usuario haya determinado inicialmente)
+#    
+#    for blob in blobs_log:                                                    #Para cada spot encontrado
+##        binaria = np.zeros((alto, ancho), dtype=np.uint8)                      #Imagen binaria que contendrá la máscara del spot
+#        y, x, r = blob                                                         #Centro y radio del spot
+#        rr,cc = circle(int(y), int(x), CellDiam/2, shape = (alto, ancho))          #Da las coordenadas que tendrá el círculo de acuerdo al centro y radio dado, usando skimage                                       
+#        mask2[rr, cc] = 255                                                    #Dadas las coordenadas anteriores, se rellenan de blanco
+#
+#        #Para crear un array de coordenadas, que servirá para el for anidado
+#        rr = np.expand_dims(rr, axis=1)
+#        cc = np.expand_dims(cc, axis=1)
+#        coordenadas = np.concatenate((rr,cc), axis=1)
+#        area = len(rr)
+#        
+#
+###        cv2.circle(binaria,(int(x),int(y)), int(r), (255,255,255), -1)         #Creación de la máscara del spot
+##        area = cv2.countNonZero(binaria)                                       #Encontramos el número de pixeles diferentes de cero
+##        coordenadas = np.argwhere(binaria == 1)                              #Buscamos las coordenadas de los pixeles blancos en la imagen binaria
+##        print(coordenadas)
+#        SerieTiempo = np.zeros(LenSerie)                                       #Contendrá la serie de tiempo
+#        j=0                                                                    #Contador para la serie de tiempo
+#        for frame in range(frame0,frame1,1):                                   #Para generar la serie de tiempo de una longitud determinada 
+#            imagen_i = data[frame,:,:]                                         #Recorremos cada frame
+#            suma = 0                                                           #Suma de los pixeles en el frame
+#            for coordenada in coordenadas:                                     #Recorremos cada coordenada
+#                suma = suma + imagen_i[coordenada[0],coordenada[1]]            #Suma de las intensidades
+#            promedio = suma/area                                               #Sacamos el promedio
+#            SerieTiempo[j] = promedio                                          #El promedio se guarda en la serie        
+#            j=j+1                                                              #Porque el frame0 puede ser diferente de cero
+#        
+#        #Normalización de la serie antes de su clasificación
+#        SerieTiempo = (SerieTiempo-SerieProm)/SerieProm
+#                
+#        resultado = Clasification(SerieTiempo)                                 #Función que hace la clasificación de la serie obtenida
+#
+#        if resultado>=0:                                                       #Si la clasificación indica que la región sí es célula
+#            #Aquí hay que agregar ese spot a la imagen binaria mask, tal vez convenga 
+#            #hacerlo usando plt para que se marquen círculos, y no cosas pixeleadas
+#            #pero habrá que ver si se puede hacer
+#            #También hay que obtener el contorno de la célula "solita" imagen binaria
+#            #Y también hay que agregar dicho contorno al diccionario de contornos
+#            #O hasta que se tenga la mask final, hacer las dos cosas, como abajo
+#            mask[rr, cc] = 255 
+#            
+##        else:
+##            print(0)
+#    
+#    plt.figure(2)
+#    plt.imshow(mask)
+#    cv2.imwrite('Binaria_Clasificada.png', mask) 
+#    cv2.imwrite('Binaria_Spots.png', mask2) 
+#    
+#    
+#    
+##%% 
+##    #Esta parte es la que solo llama a la imagen binaria que ya se tiene
+##    #No hace ningún cálculo, es para la pueba de concepto
+##    print('Segmentación de Hipófisis, aquí hay que poner lo que está haciendo Ame')
+##    
+##    binaria = cv2.imread("G:\\Mi unidad\\EAGV\\Proyectos\\Segmentacion y Analisis de Celulas con GUI\\Datos brutos\\Videos_Daniel\\1\\BINARIA2.png",0)                                 #Para que se abra en blanco y negro (1 solo canal)                                         #El stack de imágenes se pasa a un arreglo
+##    (alto, ancho)=binaria.shape 
+##
+##    # Detección de contornos de la imagen binaria
+##    copia_bin = binaria.astype(dtype='uint8')*255;
+##
+##    # Detección de contornos de la imagen binaria
+##    (imagen1,contours,hierarchy)=cv2.findContours(copia_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE);
+##
+##    #Máscara tendrá el arreglo de la imagen que se va a superponer al video, será en formato RGBA
+##    mascara = np.zeros((alto, ancho, 4));
+##    mascara1 = np.zeros((alto, ancho, 3));
+##    cv2.drawContours(mascara1,contours,-1,(255,255,0),1);     #-1 en lugar del 0
+##    mascara[:,:,0:3] = mascara1;
+##    mascara[:,:,3][mascara1[:,:,0]>200]=255;                               #Solo se pondrá en no transparente la parte de las ROIs
+##    
+##    mascara2 = np.transpose(mascara,(1,0,2))                          #El (1,0,2) indica cómo se va a trasponer la matriz 3D (ejes)
+##
+##        
+##    #Se generará un diccionario con los contornos
+##    keys = np.arange(len(contours));                                  #Las llaves serán el número consecutivo de los contornos
+##    ROI_dict = dict(zip(keys, contours));                        #https://stackoverflow.com/questions/209840/convert-two-lists-into-a-dictionary-in-python        
+###
+###    button1.setChecked(True)                                          #Ponemos en true el botón de "Show ROIs"
+###
+####        print(len(self.ROI_dict))
+###
+###    #Hay que hacer la clasificación de las series de tiempo
+###    clasificacion = Series_Clasif()
+####        print(self.clasificacion)
+###    
+###    #Ahora hay que poner la tabla donde se muestre la clasificacion y que también deje ver las series de tiempo y permita quitarlas
+###
+###    self.TablaFinal()        
+###
+###    self.Fig_dict = {}                                                     #Diccionario que tendrá las ROIs remarcadas con los checkbox
+##%%
+#    return (ROI_dict)   
+#
+#
+#
+##def Clasification(serie, frame0, frame1, i):
+##    print(i)
+##    
+#    
