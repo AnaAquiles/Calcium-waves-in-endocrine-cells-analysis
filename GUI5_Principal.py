@@ -53,7 +53,7 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%""" 
     
         self.actionData_Normalization.triggered.connect(self.dataChek2)        #Cuando se elige el menú Calcium Analysis -> Data Normalization, hay que ir a la función de dataCheck2
-        self.actionTime_Series.triggered.connect(self.TimeSeriesInfo)
+#        self.actionTime_Series.triggered.connect(self.TimeSeriesInfo)
         self.actionCorrelation.triggered.connect(self.SurrogateData)
         """%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -643,31 +643,33 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
 #        print(self.rawDataArr.shape)                                           #self.rawDataArr es el array que contiene a los datos brutos 
 
     def TimeSeriesInfo(self):
+        
+        
         """
         verificar el nombre de la ventana GUI5_TimeSeries_Ana.ui.
         LOS DATOS SE LLAMAN datosNorm
         
         GUARDAR ARCHIVOS .csv CON LOS VALORES DE ABC, AMP Y FREQ
         """
-       sampleTime = self.nombredelaventana.sampleTime                                   # Verificar el nombre de la ventana 
-       InitialFrame = self.nombredelaventana.inF_spinBox
-       FinalFrame = self.nombredelaventana.finF_spinBox
+        sampleTime = self.nombredelaventana.sampleTime                                   # Verificar el nombre de la ventana 
+        InitialFrame = self.nombredelaventana.inF_spinBox
+        FinalFrame = self.nombredelaventana.finF_spinBox
        
-       plt.figure(2)
-       plt.clf()
-       plt.hist(Auc, color= 'k')
-       plt.title('Area Under the Curve')
+        plt.figure(2)
+        plt.clf()
+        plt.hist(Auc, color= 'k')
+        plt.title('Area Under the Curve')
        
-       plt.figure(3)
-       plt.clf()
-       plt.plot(f,Amplitude.T, c='b')
-       plt.plot(f,meanFreq_part, c='r')
-       plt.ylabel('Power')
-       plt.xlabel('Frequency (Hz)')
-       plt.title('Global PowerSpectra')
-
+        plt.figure(3)
+        plt.clf()
+        plt.plot(f,Amplitude.T, c='b')
+        plt.plot(f,meanFreq_part, c='r')
+        plt.ylabel('Power')
+        plt.xlabel('Frequency (Hz)')
+        plt.title('Global PowerSpectra')
+    
       
-        
+    
         """
         Análisis de espectro de potencias (amplitud y frecuencia) / Auc
         """
@@ -686,6 +688,36 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         
         Auc = simps(fftabsdata,axis=-1) 
 
+
+    def SurrogateData(self):
+        
+        #Aquí hay que abrir primero una ventana para revisar el tipo de archivo
+        #entonces va a ser una función aparte
+        filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File',\
+                                                     os.getenv('HOME'))        #Obtiene la ruta del SO
+        lista0 = str(filename[0])                                              #Ahora filename regresa el nombre como una tupla, hay que tomar el primer valor
+        file_extention = lista0[-13:]                                          #últimos 12 caracteres del string anterior        
+
+        #Si el archivo NO es tipo _RawData.csv manda un mensaje de 
+        #error y se sale de la función 
+        if file_extention != str('_NormData.csv'):
+            self.FileTypeErrorAdviceWin3 = adv.FileTypeAdviceWinClass3() 
+            self.FileTypeErrorAdviceWin3.show()  
+            return                                                             #Salir de la función
+
+        #Buscar el archivo y guardarlo en una matriz
+        lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)  
+        #Hay que leer la información del archivo y guardarla en un array
+#        self.rawDataArr = np.loadtxt(lista1, delimiter=",", comments='#',\
+#                                skiprows=1)
+#        self.rawDataArr =  self.rawDataArr[:,1:]                             #Su primer columna es del número de frame, entonces no hay que tomarlo en cuenta
+        self.rawDataArr = np.loadtxt(lista1, delimiter=",")
+        
+        print(self.rawDataArr.shape)
+        
+        
+        
+        
 
     """%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%
