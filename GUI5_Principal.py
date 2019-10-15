@@ -23,6 +23,9 @@ import re
 import csv
 import GUI5_Advices as adv
 from os.path import isfile, join
+from scipy import stats 
+from scipy import signal
+
 
 
 
@@ -45,15 +48,14 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
             Inicio Parte de ANA        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%""" 
-        self.actionData_Normalization.triggered.connect(self.dataChek2)       #Cuando se elige el menú Calcium Analysis -> Data Normalization, hay que ir a la función de dataCheck2
-
+    
+        self.actionData_Normalization.triggered.connect(self.dataChek2)        #Cuando se elige el menú Calcium Analysis -> Data Normalization, hay que ir a la función de dataCheck2
 
         """%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%
               Fin Parte de ANA        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%""" 
-        
         
         
         
@@ -481,7 +483,8 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)  
         #Hay que leer la información del archivo y guardarla en un array
         self.rawDataArr = np.loadtxt(lista1, delimiter=",", comments='#',\
-                                skiprows=1)                                    #Su primer columna es del número de frame, entonces no hay que tomarlo en cuenta
+                                skiprows=1)
+        self.rawDataArr =  self.rawDataArr[:,1:]                             #Su primer columna es del número de frame, entonces no hay que tomarlo en cuenta
                 
         #Ahora hay que pedir el tiempo de muestreo
         self.TimeSamplingWin = adv.SamplingTimeClass()
@@ -495,16 +498,62 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         
         sampleTime = self.TimeSamplingWin.samplTime                            #Tiempo de muestreo que ingresó el usuario 
         totalFrames = self.TimeSamplingWin.totFrame                            #Número de frames totales ingresado por el usuario
+#        datos = self.rawDataArr
+        self.rawDataArr = np.swapaxes(self.rawDataArr,0,1)
+
+        print(totalFrames)
+        print(sampleTime)
+        
+        b,a = signal.bessel(3,sampleTime,btype='lowpass') #grado del filtrado 0.1
+        datosfilt=signal.filtfilt(b,a,self.rawDataArr,axis=-1)
+        datosNorm=self.detrend(self.fmin(self.rawDataArr, totalFrames),totalFrames)
+        datosNormFilt=(self.fmin(datosfilt,totalFrames)) #s/detrend
+        dt=sampleTime
+        time =np.arange(0,dt*datosNorm.shape[-1],dt)         
+        
+        plt.figure(0)
+        plt.clf()
+        plt.subplot(221)
+        plt.plot(self.rawDataArr[:,0].T)
+        
+        plt.subplot(222)
+        plt.plot(datosNormFilt[:,0].T)
+
         
         #Aquí iría la parte de normalización de los datos brutos
         #Esto solo es para que veas cuáles son las variables que tienen el 
-        #arreglo de datos brutos y el tiempo de muestreo                                                       
-        print("Tiempo de muestreo: ")
-        print(sampleTime)
-        print("Frames totales")
-        print(totalFrames)
-        print("Forma del arreglo: ")
-        print(self.rawDataArr.shape)                                           #self.rawDataArr es el array que contiene a los datos brutos 
+        #arreglo de datos brutos y el tiempo de muestreo    
+    def fmin (self, datos, totalFrames):
+        baseline=np.amin(datos[:,:totalFrames],-1)[:,None] 
+        return datos/baseline 
+    
+    def detrend(self, datos, window):#mismo valor que en baseline
+        print(window)
+        print(datos.shape)
+        x=np.arange(0,window)
+        x = x[None,:]*np.ones((datos.shape[-2],1))
+        x=np.ravel(x)
+        slopes=[]
+        intercepts=[]
+        y = np.ravel(datos)
+        slope,inter,_,_,_=stats.linregress(x,y)
+        slopes.append(slope)
+        intercepts.append(inter)
+        #-1 is the axis of ROI's
+        slopes=np.array(slopes)
+        intercepts=np.array(intercepts)
+        t=np.arange(0,datos.shape[-1])
+        trends=np.array((intercepts)[:,None] + np.array(slopes)[:,None] * t[None,:])
+        return datos - trends[:,None,:]
+
+
+                             
+#        print("Tiempo de muestreo: ")
+#        print(sampleTime)
+#        print("Frames totales")
+#        print(totalFrames)
+#        print("Forma del arreglo: ")
+#        print(self.rawDataArr.shape)                                           #self.rawDataArr es el array que contiene a los datos brutos 
 
 
 
