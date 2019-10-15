@@ -25,6 +25,9 @@ import GUI5_Advices as adv
 from os.path import isfile, join
 from scipy import stats 
 from scipy import signal
+import pandas as pd
+from scipy.integrate import simps
+
 
 
 
@@ -50,7 +53,8 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%""" 
     
         self.actionData_Normalization.triggered.connect(self.dataChek2)        #Cuando se elige el menú Calcium Analysis -> Data Normalization, hay que ir a la función de dataCheck2
-
+        self.actionTime_Series.triggered.connect(self.TimeSeriesInfo)
+        self.actionCorrelation.triggered.connect(self.SurrogateData)
         """%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%
               Fin Parte de ANA        
@@ -519,11 +523,24 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         
         plt.figure(0)
         plt.clf()
-        plt.subplot(221)
-        plt.plot(self.rawDataArr[:,0].T)
+        plt.subplot(121)
+        plt.plot(self.rawDataArr[:,:].T)
+        plt.title('Data')
         
-        plt.subplot(222)
-        plt.plot(datosNormFilt[:,0].T)
+        plt.subplot(122)
+        plt.plot(datosNormFilt[:,:].T)
+        plt.title('Data Norm and Filtered')
+        
+        series = pd.DataFrame(datosNormFilt)
+        
+        
+        plt.figure (1)
+        plt.clf()
+        plt.matshow(series, interpolation=None, aspect = 'auto', cmap='bone') 
+        plt.colorbar() 
+        plt.xlabel('Time acquisition') 
+        plt.ylabel('Cells')
+        plt.title('Raster of Data Norm')
 
         
         #Aquí iría la parte de normalización de los datos brutos
@@ -625,6 +642,49 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
 #        print("Forma del arreglo: ")
 #        print(self.rawDataArr.shape)                                           #self.rawDataArr es el array que contiene a los datos brutos 
 
+    def TimeSeriesInfo(self):
+        """
+        verificar el nombre de la ventana GUI5_TimeSeries_Ana.ui.
+        LOS DATOS SE LLAMAN datosNorm
+        
+        GUARDAR ARCHIVOS .csv CON LOS VALORES DE ABC, AMP Y FREQ
+        """
+       sampleTime = self.nombredelaventana.sampleTime                                   # Verificar el nombre de la ventana 
+       InitialFrame = self.nombredelaventana.inF_spinBox
+       FinalFrame = self.nombredelaventana.finF_spinBox
+       
+       plt.figure(2)
+       plt.clf()
+       plt.hist(Auc, color= 'k')
+       plt.title('Area Under the Curve')
+       
+       plt.figure(3)
+       plt.clf()
+       plt.plot(f,Amplitude.T, c='b')
+       plt.plot(f,meanFreq_part, c='r')
+       plt.ylabel('Power')
+       plt.xlabel('Frequency (Hz)')
+       plt.title('Global PowerSpectra')
+
+      
+        
+        """
+        Análisis de espectro de potencias (amplitud y frecuencia) / Auc
+        """
+        fftabsdata = (datosNorm[:,InitialFrame:FinalFrame]) 
+        freq = 1//self.sampleTime
+        nPseg = 1000*self.sampleTime
+        
+        for n in range(0,len(fftabsdata)):
+            f,pspec =  signal.welch(fftabsdata, fs = freq, window ='hanning',
+                                nperseg= nPseg, noverlap = freq//2, 
+                                nfft= None, detrend = 'linear',return_onesided= True,
+                                scaling='spectrum')
+        
+        Amplitude = np.array(pspec)
+        meanFreq_part = np.mean(Amplitude, axis=0)
+        
+        Auc = simps(fftabsdata,axis=-1) 
 
 
     """%%%%%%%%%%%%%%%%%%%%%%%%%
