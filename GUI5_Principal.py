@@ -500,16 +500,22 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         totalFrames = self.TimeSamplingWin.totFrame                            #Número de frames totales ingresado por el usuario
 #        datos = self.rawDataArr
         self.rawDataArr = np.swapaxes(self.rawDataArr,0,1)
-
-        print(totalFrames)
-        print(sampleTime)
         
         b,a = signal.bessel(3,sampleTime,btype='lowpass') #grado del filtrado 0.1
         datosfilt=signal.filtfilt(b,a,self.rawDataArr,axis=-1)
         datosNorm=self.detrend(self.fmin(self.rawDataArr, totalFrames),totalFrames)
         datosNormFilt=(self.fmin(datosfilt,totalFrames)) #s/detrend
-        dt=sampleTime
-        time =np.arange(0,dt*datosNorm.shape[-1],dt)         
+        
+        
+        (a,b,c) = datosNorm.shape
+        datosNorm = datosNorm.reshape(b,c)
+        
+        print(datosNorm.shape)
+        print(datosNormFilt.shape)
+
+        #Para mandar a guardar datosNorm y datosNormFilt
+        self.SaveNorm(datosNorm, datosNormFilt)
+        
         
         plt.figure(0)
         plt.clf()
@@ -528,8 +534,6 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         return datos/baseline 
     
     def detrend(self, datos, window):#mismo valor que en baseline
-        print(window)
-        print(datos.shape)
         x=np.arange(0,window)
         x = x[None,:]*np.ones((datos.shape[-2],1))
         x=np.ravel(x)
@@ -545,6 +549,72 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
         t=np.arange(0,datos.shape[-1])
         trends=np.array((intercepts)[:,None] + np.array(slopes)[:,None] * t[None,:])
         return datos - trends[:,None,:]
+
+
+    def SaveNorm(self, datosNorm, datosNormFilt):        
+        self.filename = QtGui.QFileDialog.getSaveFileName(self, 'Save File', \
+                                                     os.getenv('HOME'))        #Obtiene la ruta del SO
+        lista0 = str(self.filename[0])                                         #Ahora filename regresa el nombre como una tupla, hay que tomar su primera parte 
+        lista1  = lista0.replace('/', '\\\\')                                  #Hay que corregir la ruta del archivo, cambiando los '/' con '\\' (antes no se tenía que hacer esto GUI1 monito)        
+        #lista1 tiene la ruta incompleta de dónde guardar el archivo
+        #https://pythonprogramming.net/file-saving-pyqt-tutorial/         
+        
+        #Rutas completas de donde se guardarán los archivos
+        nameNorm = str(lista1) + str('_NormData.csv')
+        nameNormFilt = str(lista1) + str('_NormFiltData.csv')
+        #nameInfo = str(lista1) + str('_Info.csv')
+
+        
+#        #Para guardar las series de tiempo (Data)
+#        series = np.array(list(self.TimeSerDict.values()))                     #Lista de listas de las series de tiempo, cada lista es una columna!!!
+#        series = series.transpose()                                            #Array de series de tiempo en columnas
+#        llaves = list(self.TimeSerDict.keys())                                 #Lista de las llaves de cada serie 
+#        frames = np.array(list(range(len(series[:,0]))))                       #Lista con el número de frames
+#        frames = frames.transpose()
+#        frames = frames.reshape(len(series[:,0]),1)                            #Hay que cambiar la forma del arreglo para el siguiente paso
+#        series2 = np.hstack((frames,series))                                   #Esto es para poner al inicio de cada columna el número de ROI
+#
+#        #Generar el encabezado para el archivo de Data
+#        dataHead = "Frame,"
+#        for llave in llaves:
+#            dataHead = dataHead + str('ROI')+str(llave)+str(',')
+#        
+#        dataHead = dataHead[:-1]
+
+        #Guardar el archivo de datos 
+        np.savetxt(nameNorm, datosNorm, delimiter=",", fmt="%.3f")                               #%.3f es para guardar los datos como float con 3 decimales después del punto
+#        np.savetxt(nameData, series2, delimiter=",", fmt="%.3f", \
+#                   header=dataHead, comments='')                               #%.3f es para guardar los datos como float con 3 decimales después del punto
+#        #https://thatascience.com/learn-numpy/save-numpy-array-to-csv/
+#        #https://stackoverflow.com/questions/36210977/python-numpy-savetxt-hea\
+#        #der-has-extra-character/36211002
+        
+        
+#        #Para guardar las posiciones de las ROIs
+#        llaves = np.array(llaves)
+#        llaves = llaves.transpose()
+#        llaves = llaves.reshape(len(llaves),1)                                 #Para usar las llaves de las ROIs como primer columna
+#        pos = np.array(list(self.ContoursDict.values()))
+#        pos2 = np.hstack((llaves,pos))                                          #Esta es una matriz con las columnas llaves|pos X|posY
+
+        #Guardar el archivo de datos 
+        np.savetxt(nameNormFilt, datosNormFilt, delimiter=",", fmt="%.3f")                                                #%.3f es para guardar los datos como float con 3 decimales después del punto        
+            
+#        #Guardar el archivo de Info
+#        if self.cellType == 1:                                                 #El tipo celular cambia con la bandera self.cellType
+#            Info = [['Cell type','Pituitary'],['Initial frame', self.inFrame],\
+#                    ['Final frame', self.finFrame],\
+#                    ['Cell radius', self.CellDiam]]
+#            
+#        elif self.cellType == 0:    
+#            Info = [['Cell type','Neurons'],['Initial frame', self.inFrame],\
+#                    ['Final frame', self.finFrame],\
+#                    ['Cell radius', self.CellDiam]]     
+#
+#        with open(nameInfo, "w", newline="") as f:
+#            writer = csv.writer(f)
+#            writer.writerows(Info)            
+
 
 
                              
