@@ -711,10 +711,72 @@ class MainWinClass(QtGui.QMainWindow, MainWin):
 #        self.rawDataArr = np.loadtxt(lista1, delimiter=",", comments='#',\
 #                                skiprows=1)
 #        self.rawDataArr =  self.rawDataArr[:,1:]                             #Su primer columna es del número de frame, entonces no hay que tomarlo en cuenta
-        self.rawDataArr = np.loadtxt(lista1, delimiter=",")
-        
+        datosNorm = np.loadtxt(lista1, delimiter=",")
+                
         print(self.rawDataArr.shape)
         
+        
+        j = len(datosNorm[0])//2
+        print(j)
+
+        
+#        SCM=self.SurrogateCorrData(datosNorm,j)     
+#        meanSCM=np.mean(SCM,0)
+#        sdSCM=np.std(SCM,0)
+#        spcorr,pval=stats.spearmanr(datosNorm,axis=1) 
+#        spcorr[np.abs(spcorr)<(meanSCM + 2*sdSCM)]=0
+#        
+#        
+#        plt.figure(4)
+#        plt.clf()
+#        plt.subplot(231)
+#        plt.plot(datosNorm.T)
+#        
+#        plt.subplot(232)
+#        plt.imshow(spcorr,interpolation='none',cmap='inferno',vmin=-1,vmax=1)
+#        plt.colorbar()
+#        plt.grid(False)    
+#        
+#        plt.subplot(233)
+#        plt.hist(spcorr.ravel(),bins=50)
+#        
+#        plt.subplot(234)
+#        plt.plot(SCM)
+#        
+#        plt.subplot(235)
+#        plt.imshow(np.std(SCM,0),interpolation='none',cmap='inferno')
+#        #plt.imshow(spcorr2,interpolation='none',cmap='jet')
+#        
+#        plt.grid(False)    
+#        
+#        plt.subplot(236)
+#        plt.hist(SCM[:,5,8],bins=50)
+
+        
+
+    def SurrogateCorrData(self, datos,j, N=1000): #Número de veces en las que se generará las matrices aleatorizadas #NO MOVER
+        fftdatos=np.fft.fft(datos,axis=-1)
+        ang=np.angle(fftdatos)
+        amp=np.abs(fftdatos)
+        #Cálculo de la matriz de correlación de los datos aleatorizados
+        CorrMat=[]
+        for i in range(N):
+            angSurr=np.random.uniform(-np.pi,np.pi,size=ang.shape)
+            angSurr[:,j:]= - angSurr[:,j:0:-1] 
+            angSurr[:,j]=0       #tenemos que colocar únicamente el valor correspondiente a la mitad de las imágenes de nuestro estudio
+            
+            fftdatosSurr=np.cos(angSurr)*amp + 1j*np.sin(angSurr)*amp
+        
+            datosSurr=np.real(np.fft.ifft(fftdatosSurr,axis=-1)) #arroja la valores reales de los datos aleatorizados
+            spcorr2,pval2=stats.spearmanr(datosSurr,axis=1)
+            CorrMat.append(spcorr2)
+            
+        CorrMat=np.array(CorrMat)
+        return CorrMat
+      
+    
+   
+
         
         
         
